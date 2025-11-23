@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="red">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CIBC Query Generator</title>
+
+    <!-- Core Styles -->
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/page.css" />
+    <link rel="stylesheet" href="css/inputs.css" />
+  </head>
+
+  <body>
+    <div class="app">
+      <div class="main-wrap">
+        <!-- NAVBAR -->
+        <header class="navbar">
+          <div class="nav-row">
+            <!-- Left -->
+            <div class="nav-left">
+              <div
+                class="brand"
+                style="font-weight: 700; font-size: 18px; color: #fff"
+              >
+                CIBC
+              </div>
+              <div class="tag muted" style="color: rgba(255, 255, 255, 0.85)">
+                ETL QA Agent
+              </div>
+            </div>
+
+            <!-- Center nav -->
+            <nav class="nav-center">
+              <a href="#" class="muted" style="color: rgba(255, 255, 255, 0.9)"
+                >Home</a
+              >
+              <a href="#" class="muted" style="color: rgba(255, 255, 255, 0.9)"
+                >Docs</a
+              >
+              <a href="#" class="muted" style="color: rgba(255, 255, 255, 0.9)"
+                >Contact</a
+              >
+            </nav>
+
+            <!-- Right -->
+            <div class="nav-right">
+              <a class="btn signup" href="#">Sign up</a>
+              <button id="themeToggle" class="btn ghost" aria-pressed="false">
+                🌗
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- MAIN GRID -->
+        <main>
+          <!-- INTRO SECTION (JIRA BLOCK) -->
+          <section class="intro" aria-labelledby="introHeading">
+            <div class="intro-grid">
+              <div>
+                <h1 id="introHeading">Welcome to CIBC's query generator</h1>
+                <p class="muted">
+                  Write and run Python and SQL queries with ease.
+                </p>
+              </div>
+
+              <div>
+                <div class="input-row">
+                  <div class="input-group jira-key-group" id="jiraKeyWrapper">
+                    <span class="input-icon">
+                      <svg width="16" height="16" viewBox="0 0 24 24">
+                        <path
+                          fill="currentColor"
+                          d="M12 2a5 5 0 0 0-5 5v1H5v2h2v6h2v-6h2v6h2v-6h2v6h2v-9h-2V7a5 5 0 0 0-5-5z"
+                        />
+                      </svg>
+                    </span>
+
+                    <input id="jiraKey" type="text" />
+                    <label class="floating-label" for="jiraKey"
+                      >Enter JIRA key to generate</label
+                    >
+                    <button class="input-action" type="button">✕</button>
+                  </div>
+
+                  <button id="authenticateBtn" class="btn primary auth-action">
+                    Authenticate
+                  </button>
+                </div>
+
+                <!-- NEW: Error line goes here, *below* the row so it never squeezes -->
+                <div id="jiraError" class="input-error hidden">
+                  Invalid JIRA key. Please enter a valid alphanumeric ticket.
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- LEFT SIDEBAR -->
+          <aside class="sidebar">
+            <h3>Connection</h3>
+
+            <!-- API Key Input -->
+            <div class="input-group" aria-label="API token input">
+              <span class="input-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <path
+                    fill="currentColor"
+                    d="M12 1a4 4 0 0 0-4 4v3H6v12h12V8h-2V5a4 4 0 0 0-4-4zM8 8V5a4 4 0 0 1 8 0v3H8z"
+                  />
+                </svg>
+              </span>
+
+              <input id="apiKey" type="password" placeholder="" />
+              <label class="floating-label" for="apiKey">Paste API token</label>
+
+              <button
+                class="input-action"
+                type="button"
+                aria-label="Clear API token"
+              >
+                ✕
+              </button>
+            </div>
+
+            <button
+              id="connectBtn"
+              class="btn primary"
+              style="margin-top: 12px"
+            >
+              Connect
+            </button>
+
+            <div class="tips" style="margin-top: 14px">
+              <p><strong>Tips</strong></p>
+              <p>
+                Prefix with <code>// sql</code> or <code>// python</code> to
+                hint execution.
+              </p>
+              <p>Notebook auto-saves to local storage.</p>
+            </div>
+
+            <div class="actions-inline" style="margin-top: 14px">
+              <button id="importBtn" class="btn ghost">Import</button>
+              <button id="exportBtn" class="btn ghost">Export</button>
+            </div>
+          </aside>
+
+          <!-- NOTEBOOK / QUERY EDITOR -->
+          <section class="notebook">
+            <h3>Query generator</h3>
+
+            <div id="cells" class="cells">
+              <!-- CELL TEMPLATE 1 -->
+              <article class="cell" tabindex="-1">
+                <div class="drag-handle">≡</div>
+
+                <div class="content">
+                  <div class="code" contenteditable="false" spellcheck="false">
+                    # Example cell 1 print('Hello world')
+                  </div>
+
+                  <button class="btn add-cell-btn">＋ Add cell</button>
+                </div>
+              </article>
+
+              <!-- CELL TEMPLATE 2 -->
+              <article class="cell" tabindex="-1">
+                <div class="drag-handle">≡</div>
+
+                <div class="content">
+                  <div class="code" contenteditable="false" spellcheck="false">
+                    # Example cell 2 for i in range(3): print(i)
+                  </div>
+
+                  <button class="btn add-cell-btn">＋ Add cell</button>
+                </div>
+              </article>
+            </div>
+
+            <!-- Notebook actions -->
+            <div class="actions-inline">
+              <button id="runAllBtn" class="btn primary">Run all cells</button>
+              <button id="updateDeltaBtn" class="btn ghost">
+                Update to Delta table
+              </button>
+            </div>
+
+            <div class="bottom-actions">
+              <button id="runAsNewBtn" class="btn primary">
+                Run as new notebook
+              </button>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- SIGNUP / SIGN IN MODAL -->
+    <div
+      id="signupModal"
+      class="modal hidden"
+      aria-hidden="true"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="signupTitle"
+    >
+      <div class="modal-backdrop" data-dismiss="modal"></div>
+      <div class="modal-panel">
+        <header
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+          "
+        >
+          <h3 id="signupTitle" style="margin: 0">Sign in</h3>
+          <button class="modal-close" aria-label="Close">✕</button>
+        </header>
+        <div style="padding: 14px; min-width: 320px">
+          <p class="muted">
+            Use demo credentials or continue with your account.
+          </p>
+
+          <div style="margin-top: 10px">
+            <label style="font-size: 13px; font-weight: 600">Username</label>
+            <input
+              id="modalUser"
+              class="modal-input"
+              type="text"
+              placeholder="vishal-jira"
+            />
+          </div>
+
+          <div style="margin-top: 10px">
+            <label style="font-size: 13px; font-weight: 600">API token</label>
+            <input
+              id="modalToken"
+              class="modal-input"
+              type="password"
+              placeholder="vishal-token"
+            />
+          </div>
+
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              justify-content: flex-end;
+              margin-top: 14px;
+            "
+          >
+            <button id="modalSignInBtn" class="btn primary">Sign in</button>
+            <button class="btn ghost modal-close">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- JS -->
+    <script type="module" src="js/runner-pyodide.js"></script>
+    <script type="module" src="js/runner-duckdb.js"></script>
+    <script type="module" src="js/runner.js"></script>
+    <script type="module" src="js/dragdrop.js"></script>
+    <script type="module" src="js/ai.js"></script>
+    <script type="module" src="js/delta-sim.js"></script>
+    <script type="module" src="js/wiring.js"></script>
+
+    <!-- keep UI enhancements last -->
+    <script type="module" src="js/ui.js"></script>
+    <script type="module" src="js/inputs.js"></script>
+    <script type="module" src="js/auth-demo.js"></script>
+  </body>
+</html>

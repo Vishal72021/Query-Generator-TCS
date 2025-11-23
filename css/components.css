@@ -1,0 +1,490 @@
+/* css/components.css
+   Components & UI polish (Option B - modern red buttons)
+   Works with tokens.css and layout.css
+   - Replace your existing components.css with this file
+*/
+
+/* -------------------------
+   Fallback tokens (used if tokens.css didn't load)
+   ------------------------- */
+:root {
+  --accent: #b81d1d;
+  --accent-600: #9f1414;
+  --accent-rgb: 184, 29, 29;
+  --accent-600-rgb: 159, 20, 20;
+  --surface: #ffffff;
+  --text: #0f1720;
+  --muted: #6b7280;
+  --glass-border: rgba(15, 23, 32, 0.04);
+  --radius: 12px;
+  --shadow-1: 0 6px 18px rgba(2, 6, 23, 0.06);
+  --shadow-2: 0 12px 36px rgba(2, 6, 23, 0.1);
+  --shadow-3: 0 18px 56px rgba(2, 6, 23, 0.14);
+  --motion-md: 220ms;
+  --easing-default: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --focus-ring: 0 0 0 6px rgba(184, 29, 29, 0.12);
+  --z-toolbar: 700;
+}
+
+/* -------------------------
+   Base resets & typography
+   ------------------------- */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(
+    --font-sans,
+    Inter,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Arial
+  );
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.muted {
+  color: var(--muted);
+}
+
+/* ----------------------------------------------------
+   INPUT FIELDS — Modern Red Theme
+   ---------------------------------------------------- */
+
+input[type="text"],
+input[type="password"],
+input:not([type]) {
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--font-sans);
+  color: var(--text);
+
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.75)
+  );
+
+  border-radius: calc(var(--radius) - 6px);
+  border: 1px solid rgba(var(--accent-rgb), 0.25);
+  outline: none;
+
+  transition: border-color var(--motion-md) var(--easing),
+    box-shadow var(--motion-md) var(--easing),
+    background var(--motion-md) var(--easing);
+}
+
+/* Hover */
+input[type="text"]:hover,
+input[type="password"]:hover,
+input:not([type]):hover {
+  border-color: rgba(var(--accent-rgb), 0.4);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 1),
+    rgba(255, 255, 255, 0.82)
+  );
+}
+
+/* Focus */
+input[type="text"]:focus,
+input[type="password"]:focus,
+input:not([type]):focus {
+  border-color: rgba(var(--accent-rgb), 0.55);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.28),
+    0 4px 16px rgba(var(--accent-rgb), 0.25);
+}
+
+/* Placeholder styling */
+input::placeholder {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+/* Disabled */
+input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+/* For API key/password fields */
+input[type="password"] {
+  letter-spacing: 0.5px;
+}
+
+/* Narrow screen optimization */
+@media (max-width: 520px) {
+  input[type="text"],
+  input[type="password"],
+  input:not([type]) {
+    padding: 9px 10px;
+    font-size: 13px;
+  }
+}
+
+/* -------------------------
+   Modern Red Button System (Option B)
+   ------------------------- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  min-height: 40px;
+  font-weight: 600;
+  font-size: 14px;
+  border-radius: calc(var(--radius, 12px) - 4px);
+  border: 1px solid rgba(var(--accent-rgb, 184, 29, 29), 0.28);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb, 184, 29, 29), 0.14),
+    rgba(var(--accent-rgb, 184, 29, 29), 0.08)
+  );
+  color: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb, 184, 29, 29), 0.12);
+  transition: transform var(--motion-md, 220ms)
+      var(--easing-default, cubic-bezier(0.2, 0.9, 0.25, 1)),
+    box-shadow var(--motion-md, 220ms) var(--easing-default),
+    background var(--motion-md, 220ms) var(--easing-default);
+  border-style: solid;
+  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.18);
+  text-decoration: none;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb, 184, 29, 29), 0.22),
+    rgba(var(--accent-rgb, 184, 29, 29), 0.12)
+  );
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb, 184, 29, 29), 0.18);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.98);
+  background: rgba(var(--accent-rgb, 184, 29, 29), 0.22);
+}
+
+/* Primary (strong red) */
+.btn.primary {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb, 184, 29, 29), 0.92),
+    rgba(var(--accent-600-rgb, 159, 20, 20), 0.98)
+  );
+  color: #fff;
+  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.38);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb, 184, 29, 29), 0.28);
+}
+
+.btn.primary:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb, 184, 29, 29), 1),
+    rgba(var(--accent-600-rgb, 159, 20, 20), 1)
+  );
+  box-shadow: 0 10px 30px rgba(var(--accent-rgb, 184, 29, 29), 0.32);
+}
+
+.btn.primary:active {
+  transform: translateY(0) scale(0.97);
+  background: rgba(var(--accent-600-rgb, 159, 20, 20), 1);
+}
+
+/* Signup pill */
+.btn.signup {
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent);
+  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.35);
+  box-shadow: 0 6px 18px rgba(var(--accent-rgb, 184, 29, 29), 0.06);
+}
+.btn.signup:hover {
+  background: rgba(var(--accent-rgb, 184, 29, 29), 0.1);
+}
+
+/* Ghost but reddish */
+.btn.ghost {
+  background: transparent;
+  border: 1px solid rgba(var(--accent-rgb, 184, 29, 29), 0.25);
+  color: var(--accent);
+}
+.btn.ghost:hover {
+  background: rgba(var(--accent-rgb, 184, 29, 29), 0.1);
+}
+
+/* Small variant */
+.btn.small {
+  padding: 6px 10px;
+  font-size: 13px;
+  min-height: 34px;
+}
+
+/* Disabled */
+.btn[disabled],
+.btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* -------------------------
+   Micro interactions
+   ------------------------- */
+.elastic-click {
+  transition: transform 160ms var(--easing-default);
+}
+.elastic-click:active {
+  transform: scale(0.96);
+}
+
+/* -------------------------
+   Tooltip
+   ------------------------- */
+.tooltip {
+  position: fixed;
+  z-index: 99999;
+  pointer-events: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  background: rgba(20, 24, 28, 0.92);
+  color: #fff;
+  box-shadow: var(--shadow-2);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity var(--motion-md) var(--easing-default),
+    transform var(--motion-md) var(--easing-default);
+}
+.tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.tooltip.light {
+  background: rgba(255, 255, 255, 0.98);
+  color: var(--text);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* -------------------------
+   Cell toolbar & tools
+   ------------------------- */
+.cell-toolbar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: var(--shadow-2);
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: var(--z-toolbar, 700);
+  transition: transform var(--motion-md) var(--easing-default),
+    opacity var(--motion-md) var(--easing-default);
+}
+.cell-toolbar .tool {
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--text);
+}
+.cell-toolbar .tool:active {
+  transform: scale(0.96);
+}
+
+/* toolbar tool hover indicates action */
+.cell-toolbar .tool[data-action="delete"]:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb, 184, 29, 29), 0.06),
+    rgba(0, 0, 0, 0.02)
+  );
+  color: var(--danger, #ef4444);
+}
+.cell-toolbar .tool[data-action="run"]:hover {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb, 184, 29, 29), 0.08),
+    rgba(0, 0, 0, 0.02)
+  );
+  color: var(--accent);
+}
+
+/* small icon sizing */
+.icon {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+}
+
+/* -------------------------
+   Sidebar glass visuals
+   ------------------------- */
+.sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.42)
+  );
+  backdrop-filter: blur(var(--glass-blur, 10px));
+  -webkit-backdrop-filter: blur(var(--glass-blur, 10px));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+}
+
+/* dark theme compatibility */
+html[data-theme="black"] .sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* -------------------------
+   Code area (cells)
+   ------------------------- */
+.code {
+  font-family: var(
+    --font-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    "Roboto Mono",
+    "Courier New",
+    monospace
+  );
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  white-space: pre-wrap;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0));
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px dashed var(--glass-border);
+  min-height: 72px;
+  max-height: calc(1.4em * 10 + 24px); /* show up to 10 lines, then scroll */
+  overflow: auto;
+  box-sizing: border-box;
+}
+.code[contenteditable="true"] {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-style: solid;
+  border-color: rgba(var(--accent-rgb), 0.12);
+}
+
+/* -------------------------
+   Drag / reorder handle
+   ------------------------- */
+.reorder-handle,
+.drag-handle {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  cursor: grab;
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  background: transparent;
+}
+.reorder-handle:active,
+.drag-handle:active {
+  cursor: grabbing;
+  transform: scale(0.98);
+}
+
+/* -------------------------
+   Floating visual helpers
+   ------------------------- */
+.hover-glow {
+  position: relative;
+}
+.hover-glow::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity var(--motion-md) var(--easing-default),
+    transform var(--motion-md) var(--easing-default);
+}
+.hover-glow:hover::after {
+  opacity: 1;
+  transform: scale(1.02);
+  background: rgba(var(--accent-rgb), 0.04);
+  box-shadow: var(--shadow-1);
+}
+
+/* -------------------------
+   Accessibility & responsive
+   ------------------------- */
+.kbd {
+  background: rgba(0, 0, 0, 0.06);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.sr-only {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+@media (max-width: 520px) {
+  .btn {
+    padding: 8px 10px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+  .cell-toolbar {
+    top: 6px;
+    right: 8px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* End components.css */
