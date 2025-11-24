@@ -2,7 +2,7 @@
 // Demo authentication & UI wiring
 // - JIRA demo key: "vishal-jira"
 // - API demo token: "vishal-token"
-// - Modal sign-in: email= "vishal.tripathy@cibc.com", password = "CIBC@project123"
+// - Modal sign-in: email= "vishal@project.com", password = "project123"
 
 (function () {
   // small helpers
