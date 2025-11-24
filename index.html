@@ -495,6 +495,292 @@
       </div>
     </div>
 
+    <!-- C-GPT Floating Chat Widget (frontend-only, echo bot) -->
+<script>
+(function () {
+  if (window.__cgpt_frontend_widget_loaded) return;
+  window.__cgpt_frontend_widget_loaded = true;
+
+  /* ===== styles (scoped) ===== */
+  const css = `
+  /* Container */
+  .cgpt-widget { position: fixed; right:20px; bottom:20px; z-index:2147483646; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+
+  /* Floating button */
+  .cgpt-btn {
+    width:64px; height:64px; border-radius:50%; border:0; display:grid; place-items:center;
+    background: linear-gradient(135deg,#ff0033,#ff6f85); box-shadow:0 18px 40px rgba(0,0,0,0.45);
+    cursor:pointer; transition: transform .18s ease, box-shadow .18s ease;
+  }
+  .cgpt-btn:hover { transform: translateY(-4px); }
+
+  /* Panel */
+  .cgpt-panel {
+    width:420px; max-width:calc(100vw - 40px); height:640px; border-radius:14px; overflow:hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.45); background:var(--cgpt-panel-bg, #fff); display:none;
+    flex-direction:column; border:1px solid rgba(0,0,0,0.06);
+  }
+  .cgpt-panel.open { display:flex; animation:cgptPop .16s cubic-bezier(.2,.9,.3,1); }
+  @keyframes cgptPop { from { transform: scale(.98) translateY(8px); opacity: 0 } to { transform: scale(1) translateY(0); opacity:1 } }
+
+  /* Header */
+  .cgpt-header { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; border-bottom:1px solid rgba(0,0,0,0.04); background: linear-gradient(90deg,#fff6f6,#fff7f7); }
+  .cgpt-brand { display:flex; gap:10px; align-items:center; }
+  .cgpt-logo { width:36px; height:36px; border-radius:8px; display:grid; place-items:center; color:#fff; font-weight:900; background:linear-gradient(135deg,#ff0033,#ff6f85); box-shadow: 0 8px 24px rgba(255,0,80,0.12); }
+  .cgpt-title { font-weight:800; }
+  .cgpt-controls { display:flex; gap:8px; align-items:center; }
+
+  .cgpt-small-btn { padding:8px 10px; border-radius:8px; border:1px solid rgba(0,0,0,0.06); background:transparent; cursor:pointer; font-weight:700; font-size:13px; }
+  .cgpt-small-btn.icon { padding:8px; min-width:44px; display:grid; place-items:center; }
+
+  /* Conversation */
+  .cgpt-body { padding:14px; display:flex; flex-direction:column; gap:12px; overflow:auto; flex:1; background: linear-gradient(180deg,var(--cgpt-panel-bg, #fff), rgba(0,0,0,0.01)); }
+  .cgpt-msg { max-width:78%; padding:12px 14px; border-radius:12px; line-height:1.45; font-size:14px; box-shadow:0 4px 10px rgba(0,0,0,0.04); word-break:break-word; }
+  .cgpt-msg.bot { align-self:flex-start; background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border:1px dashed rgba(0,0,0,0.06); padding-left:20px; position:relative; }
+  .cgpt-msg.bot::before { content:''; position:absolute; left:8px; top:50%; transform:translateY(-50%); width:6px; height:36px; border-radius:6px; background: linear-gradient(180deg,#ff7a90,#ff0033); box-shadow:0 6px 18px rgba(255,50,80,0.08); }
+  .cgpt-msg.user { align-self:flex-end; background: linear-gradient(180deg,#fff,#fff8f8 30%); border:1px solid rgba(0,0,0,0.06); font-weight:600; }
+
+  /* Composer */
+  .cgpt-composer { padding:12px; border-top:1px solid rgba(0,0,0,0.04); display:flex; gap:10px; background:var(--cgpt-panel-bg, #fff); }
+  .cgpt-textarea { flex:1; min-height:46px; max-height:160px; padding:10px 12px; border-radius:10px; border:1px solid rgba(0,0,0,0.06); resize:none; outline:none; font-size:14px; background:transparent; color:inherit; }
+  .cgpt-send { padding:10px 14px; border-radius:10px; border:0; background:linear-gradient(135deg,#ff0033,#ff6f85); color:white; font-weight:800; cursor:pointer; }
+
+  /* small theme menu */
+  .cgpt-theme-menu { position:relative; }
+  .cgpt-theme-pop { position:absolute; right:0; top:calc(100% + 10px); background:var(--cgpt-panel-bg, #fff); padding:10px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.12); display:none; border:1px solid rgba(0,0,0,0.06); }
+  .cgpt-theme-pop.open { display:block; }
+  .cgpt-theme-opt { padding:8px 10px; border-radius:8px; cursor:pointer; font-weight:700; display:flex; gap:8px; align-items:center; }
+  .cgpt-theme-sw { width:36px; height:20px; border-radius:6px; border:1px solid rgba(0,0,0,0.06); }
+
+  /* dark adjustments (we'll toggle CSS vars) */
+  /* small responsive */
+  @media (max-width:520px){
+    .cgpt-panel{ right:12px; left:12px; bottom:12px; top:12px; width:auto; height:auto; max-height:calc(100vh - 24px) }
+    .cgpt-body{ padding:12px }
+  }
+  `;
+
+  const style = document.createElement('style');
+  style.setAttribute('data-cgpt', 'widget-styles');
+  style.innerHTML = css;
+  document.head.appendChild(style);
+
+  /* ===== create DOM ===== */
+  const widget = document.createElement('div');
+  widget.className = 'cgpt-widget';
+
+  widget.innerHTML = `
+    <button class="cgpt-btn" aria-label="Open chat" title="Chat with C-GPT">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" aria-hidden="true"><path d="M12 3a9 9 0 00-9 9c0 2.5 1 4.8 2.8 6.4L5 21l2.6-1.3A9 9 0 1012 3z" fill="#fff"/></svg>
+    </button>
+
+    <div class="cgpt-panel" role="dialog" aria-label="C-GPT chat panel" aria-hidden="true">
+      <div class="cgpt-header">
+        <div class="cgpt-brand">
+          <div class="cgpt-logo">C</div>
+          <div>
+            <div class="cgpt-title">C-GPT</div>
+            <div class="cgpt-muted" style="font-size:12px;color:var(--cgpt-muted,#6b7280)">Assistant</div>
+          </div>
+        </div>
+
+        <div class="cgpt-controls">
+          <div class="cgpt-theme-menu" style="position:relative">
+            <button class="cgpt-small-btn icon" title="Theme" id="cgptThemeBtn">⚙️</button>
+            <div class="cgpt-theme-pop" id="cgptThemePop" aria-hidden="true">
+              <div class="cgpt-theme-opt" data-theme="red"><span class="cgpt-theme-sw" style="background:linear-gradient(90deg,#ff0033,#ff6f85)"></span> Red</div>
+              <div class="cgpt-theme-opt" data-theme="black"><span class="cgpt-theme-sw" style="background:linear-gradient(90deg,#0b0d10,#2f9cff)"></span> Black</div>
+              <div class="cgpt-theme-opt" data-theme="white"><span class="cgpt-theme-sw" style="background:linear-gradient(90deg,#ffffff,#ff6b7a)"></span> White</div>
+            </div>
+          </div>
+
+          <button class="cgpt-small-btn" id="cgptShareBtn" title="Share (layout-only)">Share</button>
+          <button class="cgpt-small-btn" id="cgptLoginBtn" title="Log in (layout-only)">Log in</button>
+        </div>
+      </div>
+
+      <div class="cgpt-body" id="cgptBody" aria-live="polite"></div>
+
+      <div class="cgpt-composer">
+        <textarea class="cgpt-textarea" id="cgptInput" placeholder="Type a message — Enter to send"></textarea>
+        <button class="cgpt-send" id="cgptSend">Send</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(widget);
+
+  /* ===== utilities & state ===== */
+  const $btn = widget.querySelector('.cgpt-btn');
+  const $panel = widget.querySelector('.cgpt-panel');
+  const $body = widget.querySelector('#cgptBody');
+  const $input = widget.querySelector('#cgptInput');
+  const $send = widget.querySelector('#cgptSend');
+  const $themeBtn = widget.querySelector('#cgptThemeBtn');
+  const $themePop = widget.querySelector('#cgptThemePop');
+
+  // theme defaults & helper
+  function applyTheme(mode) {
+    // set CSS variables on :root to style the widget
+    const root = document.documentElement;
+    root.setAttribute('data-theme', mode);
+    if (mode === 'red') {
+      root.style.setProperty('--cgpt-panel-bg', '#fffafa');
+      root.style.setProperty('--cgpt-muted', '#7b3a3a');
+    } else if (mode === 'black') {
+      root.style.setProperty('--cgpt-panel-bg', '#0e0e0f');
+      root.style.setProperty('--cgpt-muted', '#9da6b2');
+    } else { // white
+      root.style.setProperty('--cgpt-panel-bg', '#ffffff');
+      root.style.setProperty('--cgpt-muted', '#6f6f6f');
+    }
+    localStorage.setItem('cgpt_widget_theme', mode);
+  }
+
+  // load saved theme
+  const savedTheme = localStorage.getItem('cgpt_widget_theme') || 'red';
+  applyTheme(savedTheme);
+
+  /* ===== open / close behavior ===== */
+  function openPanel() {
+    $panel.classList.add('open');
+    $panel.setAttribute('aria-hidden', 'false');
+    // focus textarea slightly later
+    setTimeout(() => $input.focus(), 140);
+  }
+  function closePanel() {
+    $panel.classList.remove('open');
+    $panel.setAttribute('aria-hidden', 'true');
+  }
+
+  $btn.addEventListener('click', () => {
+    if ($panel.classList.contains('open')) closePanel();
+    else openPanel();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closePanel();
+    // ctrl/cmd+k to focus input
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      openPanel();
+      $input.focus();
+    }
+  });
+
+  /* ===== theme menu ===== */
+  $themeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    $themePop.classList.toggle('open');
+  });
+  $themePop.addEventListener('click', (e) => {
+    const opt = e.target.closest('.cgpt-theme-opt');
+    if (!opt) return;
+    const t = opt.getAttribute('data-theme');
+    applyTheme(t);
+    $themePop.classList.remove('open');
+  });
+  // close theme on outside click
+  document.addEventListener('click', (e) => {
+    if (!$themePop.contains(e.target) && e.target !== $themeBtn) $themePop.classList.remove('open');
+  });
+
+  /* ===== rendering messages ===== */
+  function escapeHTML(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function appendMessage(who, text, opts = {}) {
+    const el = document.createElement('div');
+    el.className = 'cgpt-msg ' + (who === 'user' ? 'user' : 'bot');
+    // allow small markdown-like line breaks
+    const lines = escapeHTML(text).split('\n').map(l => `<div>${l}</div>`).join('');
+    el.innerHTML = lines;
+    $body.appendChild(el);
+    // scroll to bottom smoothly
+    $body.scrollTop = $body.scrollHeight;
+    if (opts.focus) $input.focus();
+    return el;
+  }
+
+  /* ===== echo behavior (simulate streaming) ===== */
+  function botEcho(text) {
+    // Show placeholder bot message
+    const placeholder = appendMessage('bot', '...', { focus: false });
+    // simulate typing chunks
+    let acc = '';
+    const delayBase = 40;
+    const chunks = splitIntoChunks(text);
+    let i = 0;
+    const iv = setInterval(() => {
+      if (i >= chunks.length) {
+        clearInterval(iv);
+        // finalize content
+        placeholder.innerHTML = escapeHTML(text).split('\n').map(l => `<div>${l}</div>`).join('');
+        $body.scrollTop = $body.scrollHeight;
+        return;
+      }
+      acc += chunks[i++];
+      placeholder.innerHTML = escapeHTML(acc).split('\n').map(l => `<div>${l}</div>`).join('');
+      $body.scrollTop = $body.scrollHeight;
+    }, delayBase + Math.random() * 80);
+  }
+  function splitIntoChunks(s) {
+    // split into word-ish chunks for nicer streaming look
+    if (!s) return [''];
+    const words = s.split(/(\s+)/); // keep spaces
+    const chunks = [];
+    let acc = '';
+    for (const w of words) {
+      acc += w;
+      if (acc.length > 20) { chunks.push(acc); acc = ''; }
+    }
+    if (acc) chunks.push(acc);
+    return chunks;
+  }
+
+  /* ===== composer behavior ===== */
+  function sendMessageFromComposer() {
+    const txt = $input.value.trim();
+    if (!txt) return;
+    // add user message
+    appendMessage('user', txt, { focus: true });
+    $input.value = '';
+    $input.style.height = 'auto';
+
+    // echo back after tiny delay (simulate thinking)
+    setTimeout(() => {
+      botEcho(txt); // echo for now
+    }, 300 + Math.random() * 400);
+  }
+
+  $send.addEventListener('click', () => sendMessageFromComposer());
+  $input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessageFromComposer();
+    }
+  });
+  // auto-resize textarea
+  $input.addEventListener('input', () => {
+    $input.style.height = 'auto';
+    $input.style.height = Math.min($input.scrollHeight, 220) + 'px';
+  });
+
+  /* ===== initial greeting ===== */
+  appendMessage('bot', 'Hello — this demo chat echoes whatever you type. Theme and layout are frontend-only.');
+
+  /* ===== expose small API on window for testing ===== */
+  window.CGPT_FRONTEND = {
+    open: openPanel,
+    close: closePanel,
+    appendMessage: (who, text) => appendMessage(who, text),
+    setTheme: (t) => applyTheme(t)
+  };
+})();
+</script>
+
+
     <!-- JS (keep original order) -->
     <script type="module" src="js/runner.js"></script>
     <script type="module" src="js/dragdrop.js"></script>
