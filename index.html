@@ -80,7 +80,8 @@
 
                     <input
                       id="jiraKey"
-                      type="text"
+                      type="password"
+                      placeholder=""
                       aria-label="Enter JIRA key to generate"
                     />
                     <label class="floating-label" for="jiraKey"
@@ -109,14 +110,6 @@
                 >
                   Invalid JIRA key. Please enter a valid alphanumeric ticket.
                 </div>
-              </div>
-
-              <!-- subtle decorative art (uses the uploaded file path) -->
-              <div class="intro-art" aria-hidden="true">
-                <img
-                  src="/mnt/data/ae120e1d-9917-471a-888f-7e8b8c5c4346.jpeg"
-                  alt=""
-                />
               </div>
             </div>
           </section>
@@ -503,7 +496,6 @@
     </div>
 
     <!-- JS (keep original order) -->
-    <script type="module" src="js/runner-pyodide.js"></script>
     <script type="module" src="js/runner.js"></script>
     <script type="module" src="js/dragdrop.js"></script>
     <script type="module" src="js/wiring.js"></script>

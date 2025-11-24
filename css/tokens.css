@@ -56,9 +56,6 @@
   /* misc */
   --glass-blur: 10px;
   --glass-border: rgba(15, 23, 32, 0.04);
-
-  /* demo screenshot (local path will be converted by environment to a URL) */
-  --demo-screenshot-url: url("/mnt/data/ae120e1d-9917-471a-888f-7e8b8c5c4346.jpeg");
 }
 
 /* ---------- Accent / Brand colors (red) ---------- */
@@ -70,64 +67,79 @@
   --accent-600-rgb: 159, 20, 20;
 }
 
+/* ---------- Default tokens (base already in file) ----------
+   Keep your :root base tokens above unchanged. Replace theme defs
+   with the following two modes: "light" and "dark".
+*/
+
 /* ---------- Light theme (default) ----------
-   Light mode uses a slightly shaded page background and a lighter surface for cards.
-   The navbar and primary buttons remain red (accent) and do not invert in dark mode.
+   Use a slightly grey, modern surface so red accent stands out.
+   Activate with: <html data-theme="light"> (recommended default)
 */
 :root,
-html[data-theme="red"] {
-  /* neutral / page background */
-  --bg: #f6f7f8; /* very light, slightly shaded background for modern look */
-  --bg-2: #eef1f2; /* slightly darker shade for sections if needed */
+html[data-theme="light"] {
+  --accent: #b81d1d;
+  --accent-600: #9f1414;
+  --accent-rgb: 184, 29, 29;
+  --accent-600-rgb: 159, 20, 20;
 
-  /* surfaces */
-  --surface: #ffffff; /* main card background */
-  --surface-2: #fbfbfb; /* slightly darker surface for subtle layer contrast */
+  /* page / surfaces */
+  --bg: #f3f4f6;          /* soft grey page background */
+  --surface: #ffffff;     /* main surface (cards / panels) */
+  --surface-2: #f7f7f9;   /* subtle alternative surface / inner */
+  --glass-border: rgba(15, 23, 32, 0.04);
 
   /* text */
-  --text: #0f1720;
+  --text: #0f1720;        /* dark, readable */
   --muted: #6b7280;
 
-  /* semantic */
+  /* feedback colors */
   --danger: #ef4444;
   --success: #16a34a;
   --info: #0ea5e9;
+
+  /* shadows kept as-is or slightly lighter for light mode */
+  --shadow-1: 0 6px 18px rgba(2, 6, 23, 0.06);
+  --shadow-2: 0 12px 36px rgba(2, 6, 23, 0.08);
 }
 
-/* ---------- Dark theme (youtube-like, deep) ----------
-   Activate via: <html data-theme="black">
-   We keep the brand accent visible; background/surfaces darken.
+/* ---------- Dark theme ----------
+   Activate with: <html data-theme="dark">
+   High-contrast dark UI inspired by modern dark UIs (e.g., YouTube/Spotify)
+   Text colors set for visibility and accessibility.
 */
-html[data-theme="black"] {
-  --bg: #0b0d10; /* deep page background (YouTube-like deep gray/near-black) */
-  --bg-2: #0f1114; /* slightly lighter bg for differentiation */
-
-  --surface: #0f1519; /* card surface */
-  --surface-2: #12161a; /* alternate surface (subtle contrast) */
-
-  --text: #e6eefb;
-  --muted: #9ca3b5;
-
-  /* accents can be slightly brighter in dark mode to keep legibility */
-  --accent: #ff6b6b; /* slightly brighter red for dark mode if desired */
+html[data-theme="dark"] {
+  --accent: #ff6b6b;            /* slightly brighter accent for contrast */
   --accent-600: #ff4a4a;
   --accent-rgb: 255, 107, 107;
   --accent-600-rgb: 255, 74, 74;
 
-  --danger: #ff6b6b;
+  /* page / surfaces */
+  --bg: #0b0f12;                /* page background (very dark) */
+  --surface: #0f1416;           /* main cards */
+  --surface-2: #0b1113;         /* slightly different surface */
+  --glass-border: rgba(255,255,255,0.03);
+
+  /* text - tuned for visibility */
+  --text: #e6eefb;              /* primary text - bright and readable */
+  --muted: #9aa4b2;             /* muted text for secondary info */
+
+  /* feedback */
+  --danger: #ff7a7a;
   --success: #34d399;
   --info: #60a5fa;
 
-  /* slightly stronger shadows for depth on dark */
-  --shadow-1: 0 10px 28px rgba(0, 0, 0, 0.5);
-  --shadow-2: 0 18px 44px rgba(0, 0, 0, 0.55);
+  /* deeper shadows for dark theme */
+  --shadow-1: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --shadow-2: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
-/* ---------- Derived helpers ---------- */
+/* derived fallbacks (keep after theme blocks) */
 :root {
   --accent-rgb: var(--accent-rgb, 184, 29, 29);
   --accent-600-rgb: var(--accent-600-rgb, 159, 20, 20);
 }
+
 
 /* ---------- Accessibility: reduced motion handling ----------
    We keep animations but make them snappy if the user requests reduced motion.

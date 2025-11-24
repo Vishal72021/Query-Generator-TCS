@@ -500,8 +500,7 @@ html[data-theme="black"] .sidebar {
   z-index: 1200;
 }
 html[data-theme="black"] #themeToggle,
-html[data-theme="white"] #themeToggle,
-html[data-theme="red"] #themeToggle {
+html[data-theme="white"] #themeToggle {
   display: inline-flex !important;
   opacity: 1 !important;
 }

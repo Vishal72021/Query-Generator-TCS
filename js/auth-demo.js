@@ -31,11 +31,13 @@
     const navRight = qs(".nav-right");
     if (!navRight) return null;
 
-    // remove stray sign-out buttons that are not the primary one (defensive)
-    qsa(".nav-right .btn.signin, .nav-right .btn.signup").forEach((b, i) => {
-      // keep only the first one
-      if (i > 0) b.remove();
-    });
+    // Remove duplicate sign buttons (keep first)
+    const found = navRight.querySelectorAll(".btn.signin, .btn.signup");
+    if (found && found.length > 1) {
+      for (let i = 1; i < found.length; i++) {
+        found[i].remove();
+      }
+    }
 
     let btn = navRight.querySelector(".btn.signin, .btn.signup");
     const togg = qs("#themeToggle");
@@ -89,7 +91,11 @@
   function applySignButton(signedIn) {
     const btn = ensureSignButton();
     if (!btn) return;
+
     btn.onclick = null;
+    // Clear any dataset markers
+    btn.removeAttribute("data-demo");
+
     if (signedIn) {
       btn.textContent = "Sign out";
       btn.classList.remove("signup");
@@ -101,6 +107,7 @@
           localStorage.removeItem("cibc_jira_key");
           sessionStorage.removeItem("cibc_api_token");
           sessionStorage.removeItem("cibc_signed_in");
+          localStorage.removeItem("cibc_user_email");
         } catch (err) {}
         toast("Signed out (demo)", { type: "info", duration: 1200 });
         applySignButton(false);
@@ -114,10 +121,7 @@
         e.preventDefault();
         const modal = qs("#signupModal");
         if (modal) {
-          modal.classList.remove("hidden");
-          modal.setAttribute("aria-hidden", "false");
-          const u = modal.querySelector("#modalUser");
-          if (u) setTimeout(() => u.focus(), 40);
+          openModal(modal);
         }
       };
     }
@@ -156,41 +160,85 @@
     }
   }
 
-  // wire theme toggler — robust cycle between red -> white -> black
-  function wireThemeToggler() {
-    const togg = qs("#themeToggle");
-    if (!togg) return;
-    const themes = ["red", "white", "black"];
-    function currentTheme() {
-      return document.documentElement.getAttribute("data-theme") || "red";
+  // ------------------------
+  // Modal helpers (open/close & lightweight focus trap)
+  // ------------------------
+  function openModal(modal) {
+    if (!modal) return;
+    modal.classList.remove("hidden");
+    modal.setAttribute("aria-hidden", "false");
+    // focus first focusable element
+    const first = modal.querySelector(
+      'input, button, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    if (first) {
+      // slight delay to allow CSS transitions
+      setTimeout(() => first.focus(), 40);
     }
-    function applyTheme(t) {
-      document.documentElement.setAttribute("data-theme", t);
-      togg.setAttribute("aria-pressed", t === "black" ? "true" : "false");
-      try {
-        localStorage.setItem("cibc_theme", t);
-      } catch (e) {}
-    }
-    // load saved
-    const stored = localStorage.getItem("cibc_theme");
-    if (stored && themes.includes(stored)) applyTheme(stored);
-    togg.style.display = "inline-flex"; // defensive
-    togg.addEventListener("click", (e) => {
-      e.preventDefault();
-      const cur = currentTheme();
-      const idx = themes.indexOf(cur);
-      const next = themes[(idx + 1) % themes.length];
-      applyTheme(next);
-      toast(`Theme: ${next}`, { duration: 900 });
-    });
+    // setup simple focus trap
+    modal.__savedActive = document.activeElement;
+    installFocusTrap(modal);
   }
 
-  // main initialization
+  function closeModal(modal) {
+    if (!modal) return;
+    modal.classList.add("hidden");
+    modal.setAttribute("aria-hidden", "true");
+    removeFocusTrap(modal);
+    // restore focus
+    if (
+      modal.__savedActive &&
+      typeof modal.__savedActive.focus === "function"
+    ) {
+      setTimeout(() => modal.__savedActive.focus(), 40);
+    }
+  }
+
+  function installFocusTrap(modal) {
+    if (!modal) return;
+    // store handler so we can remove later
+    const handler = function (ev) {
+      if (ev.key !== "Tab") return;
+      const focusables = Array.from(
+        modal.querySelectorAll(
+          'a[href], button:not([disabled]), textarea, input:not([disabled]), select, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => el.offsetParent !== null);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (ev.shiftKey) {
+        if (document.activeElement === first) {
+          ev.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          ev.preventDefault();
+          first.focus();
+        }
+      }
+    };
+    modal.__trapHandler = handler;
+    document.addEventListener("keydown", handler);
+  }
+
+  function removeFocusTrap(modal) {
+    if (!modal) return;
+    if (modal.__trapHandler) {
+      document.removeEventListener("keydown", modal.__trapHandler);
+      modal.__trapHandler = null;
+    }
+  }
+
+  // ------------------------
+  // Main init
+  // ------------------------
   function init() {
     // wire toggler immediately
     wireThemeToggler();
 
-    // fill sign button initial state
+    // ensure sign button exists and set initial state
     const signed = !!sessionStorage.getItem("cibc_signed_in");
     applySignButton(signed);
 
@@ -210,7 +258,7 @@
         authBtn.disabled = true;
         const orig = authBtn.textContent;
         authBtn.textContent = "Authenticating…";
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 600));
         if (val === DEMO_JIRA) {
           try {
             localStorage.setItem("cibc_jira_key", val);
@@ -238,7 +286,6 @@
         }
         authBtn.disabled = false;
         // Note: update to delta remains disabled until API token validated
-        // keep runAll/runAsNew unchanged by this action
       });
     }
 
@@ -258,7 +305,7 @@
         connectBtn.disabled = true;
         const orig = connectBtn.textContent;
         connectBtn.textContent = "Connecting…";
-        await new Promise((r) => setTimeout(r, 700));
+        await new Promise((r) => setTimeout(r, 600));
         if (val === DEMO_TOKEN) {
           try {
             sessionStorage.setItem("cibc_api_token", val);
@@ -290,53 +337,72 @@
       });
     }
 
-    // modal wiring (sign-in modal logic)
+    // Modal wiring (sign-in modal logic)
     const modal = qs("#signupModal");
     const modalSignInBtn = qs("#modalSignInBtn");
-    if (modal && modalSignInBtn) {
-      modalSignInBtn.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        const user = (qs("#modalUser", modal)?.value || "").trim();
-        const pw = (qs("#modalToken", modal)?.value || "").trim();
-
-        if (user === DEMO_EMAIL && pw === DEMO_PW) {
-          // mark user as signed-in (session-only)
-          try {
-            sessionStorage.setItem("cibc_signed_in", "1");
-          } catch (e) {}
-          toast("Signed in (demo)", { type: "success", duration: 1400 });
-          // enable runAll & runAsNew, but leave updateDelta disabled until API token validated
-          const apiConnected =
-            sessionStorage.getItem("cibc_api_token") === DEMO_TOKEN;
-          setActionProtection({ apiConnected, signedIn: true });
-          applySignButton(true);
-          // close modal
-          modal.classList.add("hidden");
-          modal.setAttribute("aria-hidden", "true");
-        } else {
-          toast("Invalid sign-in credentials", {
-            type: "error",
-            duration: 1800,
-          });
-        }
-      });
-
-      // close controls
+    if (modal) {
+      // ensure backdrop & close buttons close the modal
       modal.querySelectorAll(".modal-close, .modal-backdrop").forEach((el) => {
         el.addEventListener("click", (e) => {
           e.preventDefault();
-          modal.classList.add("hidden");
-          modal.setAttribute("aria-hidden", "true");
+          closeModal(modal);
         });
       });
 
       // close on ESC
       document.addEventListener("keydown", (ev) => {
         if (ev.key === "Escape" && !modal.classList.contains("hidden")) {
-          modal.classList.add("hidden");
-          modal.setAttribute("aria-hidden", "true");
+          closeModal(modal);
         }
       });
+
+      // sign-in handler
+      if (modalSignInBtn) {
+        modalSignInBtn.addEventListener("click", (ev) => {
+          ev.preventDefault();
+          const user = (qs("#modalUser", modal)?.value || "").trim();
+          const pw = (qs("#modalToken", modal)?.value || "").trim();
+
+          if (user === DEMO_EMAIL && pw === DEMO_PW) {
+            // mark user as signed-in (session-only)
+            try {
+              sessionStorage.setItem("cibc_signed_in", "1");
+              localStorage.setItem("cibc_user_email", user.toLowerCase());
+            } catch (e) {}
+            toast("Signed in (demo)", { type: "success", duration: 1400 });
+            // enable runAll & runAsNew, but leave updateDelta disabled until API token validated
+            const apiConnected =
+              sessionStorage.getItem("cibc_api_token") === DEMO_TOKEN;
+            setActionProtection({ apiConnected, signedIn: true });
+            applySignButton(true);
+            closeModal(modal);
+          } else {
+            // allow also demo pair login
+            if (user === DEMO_JIRA && pw === DEMO_TOKEN) {
+              try {
+                sessionStorage.setItem("cibc_signed_in", "1");
+                localStorage.setItem("cibc_jira_key", user);
+                sessionStorage.setItem("cibc_api_token", pw);
+              } catch (e) {}
+              toast("Signed in (demo pair)", {
+                type: "success",
+                duration: 1400,
+              });
+              const apiConnected =
+                sessionStorage.getItem("cibc_api_token") === DEMO_TOKEN;
+              setActionProtection({ apiConnected, signedIn: true });
+              applySignButton(true);
+              closeModal(modal);
+              return;
+            }
+
+            toast("Invalid sign-in credentials", {
+              type: "error",
+              duration: 1800,
+            });
+          }
+        });
+      }
     }
 
     // Initialize protection on load (based on current session)

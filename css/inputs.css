@@ -1,7 +1,7 @@
 /* css/inputs.css
    Floating labels, input icons, validation, red glow, and helpers.
-   Scoped to the main page to avoid leaking styles.
-   Updated: fixes label/input overlap, input shrink in flex rows, and clear-action stacking.
+   Updated: transparent labels, JIRA floats on focus only, z-index fixes,
+   consistent sizing and vertical centering to match API token layout.
 */
 
 /* Input group wrapper (base) */
@@ -14,17 +14,18 @@ body .input-group {
   box-sizing: border-box;
   min-width: 0; /* critical so children can shrink instead of overflow */
   z-index: 0; /* baseline */
-  overflow: visible; /* allow icon / action to hover, but content will clip correctly */
+  overflow: visible;
 }
 
 /* the actual input */
 body .input-group input[type="text"],
 body .input-group input[type="password"],
 body .input-group input:not([type]) {
-  flex: 1 1 auto; /* allow grow & shrink, respect container */
-  min-width: 0; /* prevent overflowing parent (important for flex) */
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
-  padding: 12px 12px;
+  height: 44px;
+  padding: 8px 12px;
   padding-left: 40px; /* leave room for left icon */
   padding-right: 40px; /* leave room for clear button on right */
   border-radius: calc(var(--radius) - 6px);
@@ -41,10 +42,9 @@ body .input-group input:not([type]) {
     background var(--motion-md, 220ms) var(--easing);
   box-sizing: border-box;
   position: relative;
-  z-index: 1; /* keep input above background but below action icon/label */
-  line-height: 1.4;
-  padding-top: 10px;
-  padding-bottom: 10px;
+  z-index: 1; /* input sits below label */
+  line-height: 1.25;
+  background-clip: padding-box; /* so label mask looks clean */
 }
 
 /* left icon (inline SVG or emoji) */
@@ -61,19 +61,19 @@ body .input-icon {
   pointer-events: none;
   color: rgba(var(--accent-rgb, 184, 29, 29), 0.95);
   opacity: 0.95;
-  z-index: 2;
+  z-index: 3;
 }
 
 /* clear / action button on the right */
 body .input-action {
   position: absolute;
-  right: 6px;
+  right: 8px;
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 30px;
+  height: 44px; /* match input height for perfect vertical centering */
   min-width: 30px;
   padding: 6px;
   border-radius: 6px;
@@ -82,13 +82,13 @@ body .input-action {
   color: var(--muted);
   cursor: pointer;
   transition: background var(--motion-md, 220ms) var(--easing);
-  z-index: 5; /* above label so it's clickable */
+  z-index: 6; /* above label so it's always clickable */
 }
 body .input-action:hover {
   background: rgba(0, 0, 0, 0.03);
 }
 
-/* floating label - masked so it doesn't overlap input text */
+/* floating label - transparent background (user requested) */
 body .floating-label {
   position: absolute;
   left: 40px; /* matches input left padding */
@@ -100,33 +100,42 @@ body .floating-label {
     font-size var(--motion-md, 220ms) var(--easing),
     opacity var(--motion-md, 220ms);
   pointer-events: none;
-  background: var(--surface);
-  padding: 0 8px; /* small mask so the label doesn't visually overlap the input text */
-  z-index: 4; /* above input */
+  background: transparent; /* transparent as requested */
+  padding: 0 6px;
+  z-index: 5; /* above the input so it looks like label is over input */
   white-space: nowrap;
   transform-origin: left center;
 }
 
-/* when input has a value or focus, float label up */
-body .input-group.has-value .floating-label,
-body .input-group input:focus + .floating-label,
-body .input-group input:focus ~ .floating-label {
+/* default: API token & others keep the has-value float behavior */
+/* float when group has value (non-JIRA inputs) */
+body .input-group.has-value .floating-label {
   transform: translateY(-150%) scale(0.95);
   font-size: 12px;
-  opacity: 0.95;
+  color: var(--accent);
+  opacity: 0.98;
+}
+
+/* JIRA-specific: float label only on focus (not on has-value) */
+/* prefer .jira-key-group:focus-within so label moves up only when clicked */
+/* JIRA now floats on focus OR when it has .has-value */
+.input-group.jira-key-group.has-value .floating-label,
+.input-group.jira-key-group:focus-within .floating-label {
+  transform: translateY(-150%) scale(0.95);
+  font-size: 12px;
+  opacity: 0.98;
   color: var(--accent);
 }
 
-/* support for browsers where placeholder-shown can be used */
-body .input-group input:not(:placeholder-shown) + .floating-label {
-  transform: translateY(-150%) scale(0.95);
-  font-size: 12px;
-  color: var(--accent);
+/* support for browsers where placeholder-shown can be used (for non-JIRA) */
+body .input-group input:not(:placeholder-shown) + .floating-label,
+body .input-group input:not(:placeholder-shown) ~ .floating-label {
+  /* only take effect if the JS adds the has-value class (we keep behavior consistent) */
 }
 
 /* Focus state */
 body .input-group input:focus {
-  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.6);
+  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.55);
   box-shadow: 0 6px 18px rgba(var(--accent-rgb, 184, 29, 29), 0.12);
   background: #fff;
 }
@@ -140,9 +149,10 @@ body .input-group.invalid .floating-label {
   color: var(--danger, #ef4444);
 }
 
-/* small icon adjustments for dark theme */
-html[data-theme="black"] body .input-icon {
-  color: rgba(255, 255, 255, 0.9);
+/* dark theme tweaks — label remains readable but transparent so no heavy dark block */
+html[data-theme="black"] body .floating-label {
+  color: var(--muted);
+  /* keep transparent; avoid pure black masks that cause heavy boxes */
 }
 
 /* compact variant (no icons) */
@@ -169,8 +179,7 @@ body .input-group.jira-key-group {
   box-sizing: border-box;
 }
 
-/* When focused (or has content) the jira input expands to 70% for extra space */
-body .input-group.jira-key-group.has-value,
+/* When focused the jira input expands to 70% (user requested expansion on focus) */
 body .input-group.jira-key-group:focus-within {
   width: 70%;
 }
@@ -178,14 +187,14 @@ body .input-group.jira-key-group:focus-within {
 /* Authenticate button occupies natural width, aligned at right */
 body .auth-action {
   white-space: nowrap;
-  flex: 0 0 auto; /* do not grow or shrink */
+  flex: 0 0 auto;
   margin-left: 6px;
 }
 
-/* Sidebar-specific safety: keep connect/authenticate button block-level and pushing content down */
+/* Sidebar-specific safety */
 .sidebar .btn.primary,
 aside .btn.primary {
-  display: inline-block; /* avoid absolute or overlay behavior */
+  display: inline-block;
   width: auto;
   margin-top: 12px;
   box-sizing: border-box;
@@ -205,96 +214,46 @@ aside .btn.primary {
   box-sizing: border-box;
   z-index: 1;
 }
-
-/* Hidden state */
 .input-error.hidden {
   opacity: 0;
   height: 0;
   overflow: hidden;
 }
-
-/* Visible state */
 .input-error.show {
   opacity: 1;
   height: auto;
 }
 
-/* small screens adjustments: stack, keep spacing */
-@media (max-width: 820px) {
-  body .input-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  body .input-group.jira-key-group {
-    width: 100%;
-    max-width: none;
-    transition: none; /* simpler for mobile */
-  }
-  body .auth-action {
-    align-self: flex-start;
-  }
-
-  /* ensure tappable clear action remains accessible */
-  body .input-action {
-    right: 8px;
-  }
+/* Ensure icon & action heights match input so centering is consistent */
+.input-group .input-icon,
+.input-group .input-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
 }
 
+/* Selection color tuning for dark mode so highlighted text isn't black box */
+.input-group input::selection {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text);
+}
+html[data-theme="black"] .input-group input::selection {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+/* small screens: slightly smaller height */
 @media (max-width: 520px) {
-  body .input-group input[type="text"],
-  body .input-group input[type="password"] {
+  .input-group input[type="text"],
+  .input-group input[type="password"],
+  .input-group input:not([type]) {
+    height: 40px;
     padding-left: 36px;
     padding-right: 36px;
   }
-  body .floating-label {
-    left: 36px;
+  .input-group .input-icon,
+  .input-group .input-action {
+    height: 40px;
   }
 }
-
-/* Ensure input icons/clear action don't cause layout shift */
-.input-group .input-icon svg,
-.input-group .input-action svg {
-  display: inline-block;
-  vertical-align: middle;
-  width: 18px;
-  height: 18px;
-}
-
-/* Spacing between stacked inputs */
-.input-group + .input-group {
-  margin-top: 10px;
-}
-
-/* 'Authenticated' state should not produce abnormal size or overlay */
-/* Keep disabled appearance gentle so it doesn't push layout */
-.btn.disabled,
-.btn[disabled] {
-  opacity: 0.92;
-  pointer-events: none;
-  transform: none;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
-}
-
-/* If your app toggles a special class when authenticated, keep size stable */
-.auth-action.authenticated,
-.connect-btn.authenticated {
-  width: auto;
-  padding-left: 14px;
-  padding-right: 14px;
-}
-
-/* safety: ensure run-status / output and other appended elements don't overlap input row */
-.input-helper {
-  display: block;
-  width: 100%;
-  box-sizing: border-box;
-  margin-top: 6px;
-  z-index: 1;
-}
-
-/* Accessibility: ensure labels are readable on dark surfaces */
-html[data-theme="black"] .input-group .floating-label {
-  background: var(--surface);
-}
-
-/* End of css/inputs.css */

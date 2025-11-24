@@ -1,11 +1,8 @@
-// js/inputs-validation.js
-// Consolidated JIRA + API validation + error-line-below behavior
-// Demo asset (your uploaded file path for reference):
-// /mnt/data/CIBC Notebook — Index - Opera 2025-11-22 22-38-31.mp4
+// js/inputs.js
+// Floating label handling with JIRA supporting has-value + focus float.
 
 (function () {
   const PAGE_SCOPE = 'body[data-page="main"]';
-
   function inScope(selector) {
     return document.querySelector(`${PAGE_SCOPE} ${selector}`);
   }
@@ -13,274 +10,75 @@
     return Array.from(document.querySelectorAll(`${PAGE_SCOPE} ${selector}`));
   }
 
-  // helper to ensure an error container exists below the input-row
-  function ensureErrorContainer(wrapper, id, defaultMsg) {
-    // wrapper is the element that contains the input-row (e.g. the column div)
-    // we will append an error div with id if none exists
-    let err = wrapper.querySelector(`#${id}`);
-    if (!err) {
-      err = document.createElement("div");
-      err.id = id;
-      err.className = "input-error hidden";
-      err.setAttribute("role", "status");
-      err.setAttribute("aria-live", "polite");
-      if (defaultMsg) err.textContent = defaultMsg;
-      wrapper.appendChild(err);
-    }
-    return err;
-  }
-
-  // JIRA key validator (allow letters, numbers, dash and underscore)
-  function isValidJiraKey(v) {
-    if (!v) return false;
-    return /^[A-Za-z0-9_-]+$/.test(v.trim());
-  }
-
-  // Show error (adds .invalid to group, sets aria-invalid, shows message)
-  function showInputError(group, inputEl, errEl, message) {
-    if (group) group.classList.add("invalid");
-    if (inputEl) inputEl.setAttribute("aria-invalid", "true");
-    if (errEl) {
-      errEl.textContent = message;
-      errEl.classList.remove("hidden");
-      errEl.classList.add("show");
-    }
-  }
-
-  // Hide error (remove .invalid, aria-invalid, hide message)
-  function hideInputError(group, inputEl, errEl) {
-    if (group) group.classList.remove("invalid");
-    if (inputEl) inputEl.removeAttribute("aria-invalid");
-    if (errEl) {
-      errEl.classList.remove("show");
-      errEl.classList.add("hidden");
-      // keep text content for accessibility but you can clear if desired:
-      // errEl.textContent = '';
-    }
-  }
-
-  function initValidation() {
-    // JIRA input + authenticate button
-    const jiraInput = inScope("#jiraKey");
-    const authenticateBtn = inScope("#authenticateBtn");
-
-    if (jiraInput) {
-      // find wrapper area to append error (the nearest parent column)
-      const jiraWrapperColumn = jiraInput
-        .closest(".intro")
-        ?.querySelector(".intro-grid")
-        ? jiraInput.closest(".intro-grid")
-        : jiraInput.closest("div")?.parentElement || document.body;
-      // safer: prefer the column that contains this input-row (the immediate parent container of the input-row)
-      // but to be predictable we find the nearest ancestor that is a direct column used in your intro snippet:
-      let column =
-        jiraInput.closest(".input-row")?.parentElement ||
-        jiraInput.closest(".intro") ||
-        jiraInput.closest("section") ||
-        document.body;
-      const jiraError = ensureErrorContainer(column, "jiraError", "");
-
-      // live validation: show/hide error as user types
-      jiraInput.addEventListener("input", () => {
-        const val = (jiraInput.value || "").trim();
-        const group = jiraInput.closest(".input-group");
-        if (val === "" || isValidJiraKey(val)) {
-          hideInputError(group, jiraInput, jiraError);
-          // also toggle has-value (if you are using that class)
-          if (val) group && group.classList.add("has-value");
-          else group && group.classList.remove("has-value");
-        } else {
-          showInputError(
-            group,
-            jiraInput,
-            jiraError,
-            "JIRA key must be alphanumeric (letters, numbers, - or _)."
-          );
-        }
-      });
-
-      // optional: also validate on blur (user leaves field)
-      jiraInput.addEventListener("blur", () => {
-        const val = (jiraInput.value || "").trim();
-        const group = jiraInput.closest(".input-group");
-        if (!val) {
-          // hide or show per your UX preference; here we hide when empty
-          hideInputError(group, jiraInput, jiraError);
-          return;
-        }
-        if (!isValidJiraKey(val)) {
-          showInputError(
-            group,
-            jiraInput,
-            jiraError,
-            "JIRA key must be alphanumeric (letters, numbers, - or _)."
-          );
-        } else {
-          hideInputError(group, jiraInput, jiraError);
-        }
-      });
-
-      // authenticate button click (similar to your API handler style)
-      if (authenticateBtn) {
-        authenticateBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          const group = jiraInput.closest(".input-group");
-          const val = (jiraInput.value || "").trim();
-          if (!val || !isValidJiraKey(val)) {
-            showInputError(
-              group,
-              jiraInput,
-              jiraError,
-              "JIRA key must be alphanumeric (letters, numbers, - or _)."
-            );
-            jiraInput.focus();
-            return;
-          }
-
-          // success: store demo value and hide errors
-          try {
-            localStorage.setItem("cibc_jira_key", val);
-          } catch (err) {}
-          hideInputError(group, jiraInput, jiraError);
-
-          if (window.CIBC_UI?.toast)
-            window.CIBC_UI.toast("JIRA key accepted", { duration: 1600 });
-        });
-      }
-    }
-
-    // API token input + Connect button
-    const apiInput = inScope("#apiKey");
-    const connectBtn = inScope("#connectBtn");
-
-    if (apiInput && connectBtn) {
-      // find wrapper column to append error below input-row
-      let column =
-        apiInput.closest(".input-row")?.parentElement ||
-        apiInput.closest(".sidebar") ||
-        apiInput.closest("aside") ||
-        apiInput.closest("section") ||
-        document.body;
-      const apiError = ensureErrorContainer(column, "apiError", "");
-
-      // live hide on input
-      apiInput.addEventListener("input", () => {
-        const group = apiInput.closest(".input-group");
-        if (apiInput.value && apiInput.value.trim() !== "") {
-          hideInputError(group, apiInput, apiError);
-        } else {
-          // keep hidden until connect clicked; optional live error
-          hideInputError(group, apiInput, apiError);
-        }
-      });
-
-      connectBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const group = apiInput.closest(".input-group");
-        const val = (apiInput.value || "").trim();
-        if (!val) {
-          showInputError(
-            group,
-            apiInput,
-            apiError,
-            "API token cannot be empty."
-          );
-          apiInput.focus();
-          return;
-        }
-
-        // success: persist
-        try {
-          sessionStorage.setItem("cibc_api_token", val);
-        } catch (err) {}
-
-        hideInputError(group, apiInput, apiError);
-        if (window.CIBC_UI?.toast)
-          window.CIBC_UI.toast("API token saved (demo)", { duration: 1400 });
-      });
-    }
-  } // end initValidation
-
-  // init on DOM ready
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initValidation);
-  } else {
-    initValidation();
-  }
-
-  // Expose helper for other scripts
-  window.CIBCInputs = window.CIBCInputs || {};
-  window.CIBCInputs.validateJira = function () {
-    const inp = inScope("#jiraKey");
-    if (!inp) return false;
-    return /^[A-Za-z0-9_-]+$/.test(inp.value || "");
-  };
-})();
-
-// inputs.js — small helper to keep floating labels in sync
-(function () {
-  const groups = Array.from(document.querySelectorAll(".input-group"));
-
-  function updateGroup(g) {
+  function initGroup(g) {
+    if (!g) return;
     const input = g.querySelector("input");
-    if (!input) return;
-    if ((input.value || "").toString().trim().length > 0) {
-      g.classList.add("has-value");
-    } else {
-      g.classList.remove("has-value");
-    }
-  }
-
-  groups.forEach((g) => {
-    const input = g.querySelector("input");
-    if (!input) return;
-
-    // initial state
-    updateGroup(g);
-
-    // on input changes
-    input.addEventListener("input", () => updateGroup(g));
-    input.addEventListener("change", () => updateGroup(g));
-    // handles autofill or programmatic changes
-    input.addEventListener("blur", () => updateGroup(g));
-
-    // wire clear button inside group .input-action (if present)
     const clearBtn = g.querySelector(".input-action");
+    if (!input) return;
+
+    // --- INITIAL STATE ---
+    const val = (input.value || "").trim();
+
+    // BOTH JIRA + API token now support .has-value
+    if (val.length > 0) g.classList.add("has-value");
+    else g.classList.remove("has-value");
+
+    // --- EVENTS ---
+    input.addEventListener("input", () => {
+      const v = (input.value || "").trim();
+      if (v.length > 0) g.classList.add("has-value");
+      else g.classList.remove("has-value");
+    });
+
+    input.addEventListener("focus", () => {
+      g.classList.add("focus");
+    });
+
+    input.addEventListener("blur", () => {
+      g.classList.remove("focus");
+    });
+
+    // clear button logic
     if (clearBtn) {
       clearBtn.addEventListener("click", (ev) => {
-        // if it's a real clear button, clear the input
-        if (input.value && input.value.length) {
+        ev.preventDefault();
+        if (input.value) {
           input.value = "";
           input.dispatchEvent(new Event("input", { bubbles: true }));
           input.focus();
-        } else {
-          // optionally, if it's used for another action, do nothing
         }
       });
     }
-  });
+  }
 
-  // global observer (optional): watches for newly added input groups and initializes them
+  // init
+  function initAll() {
+    const groups = allInScope(".input-group");
+    groups.forEach(initGroup);
+  }
+
   const ro = new MutationObserver((mutations) => {
     for (const m of mutations) {
       for (const node of m.addedNodes) {
         if (!(node instanceof HTMLElement)) continue;
-        if (node.matches && node.matches(".input-group")) {
-          // re-run initial wiring for this new group
-          const ev = new Event("input", { bubbles: true });
-          const input = node.querySelector("input");
-          if (input) input.dispatchEvent(ev);
-        } else {
-          // maybe a child contains groups:
+        if (node.matches(".input-group")) initGroup(node);
+        else
           node.querySelectorAll &&
-            node.querySelectorAll(".input-group").forEach((g) => {
-              const input = g.querySelector("input");
-              if (input)
-                input.dispatchEvent(new Event("input", { bubbles: true }));
-            });
-        }
+            node.querySelectorAll(".input-group").forEach(initGroup);
       }
     }
   });
-  ro.observe(document.body, { childList: true, subtree: true });
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      initAll();
+      ro.observe(document.body, { childList: true, subtree: true });
+    });
+  } else {
+    initAll();
+    ro.observe(document.body, { childList: true, subtree: true });
+  }
+
+  window.CIBCInputs = window.CIBCInputs || {};
+  window.CIBCInputs.init = initAll;
 })();

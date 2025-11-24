@@ -110,7 +110,9 @@ async function runCell(cell) {
   } catch (err) {
     setOutput(
       cell,
-      `<pre style="color:#c21a1a">${escapeHtml(err.message || String(err))}</pre>`
+      `<pre style="color:#c21a1a">${escapeHtml(
+        err.message || String(err)
+      )}</pre>`
     );
     runnerResEl.textContent = "Error";
   } finally {
@@ -188,7 +190,10 @@ function wireUI() {
           setOutput(cell, `<pre>AI explain not available.</pre>`);
         }
       } catch (e) {
-        setOutput(cell, `<pre style="color:#c21a1a">${escapeHtml(String(e))}</pre>`);
+        setOutput(
+          cell,
+          `<pre style="color:#c21a1a">${escapeHtml(String(e))}</pre>`
+        );
       }
     } else if (act === "ai-fix") {
       try {
@@ -198,13 +203,19 @@ function wireUI() {
           if (r.ok) {
             setOutput(cell, `<pre>${escapeHtml(r.text)}</pre>`);
           } else {
-            setOutput(cell, `<pre style="color:#c21a1a">${escapeHtml(r.error)}</pre>`);
+            setOutput(
+              cell,
+              `<pre style="color:#c21a1a">${escapeHtml(r.error)}</pre>`
+            );
           }
         } else {
           setOutput(cell, `<pre>AI fix not available.</pre>`);
         }
       } catch (e) {
-        setOutput(cell, `<pre style="color:#c21a1a">${escapeHtml(String(e))}</pre>`);
+        setOutput(
+          cell,
+          `<pre style="color:#c21a1a">${escapeHtml(String(e))}</pre>`
+        );
       }
     }
   });
@@ -233,7 +244,8 @@ function wireUI() {
 
   // auto-save when cell content changes
   document.addEventListener("input", (ev) => {
-    if (ev.target && ev.target.matches && ev.target.matches(".code")) saveDebounced();
+    if (ev.target && ev.target.matches && ev.target.matches(".code"))
+      saveDebounced();
   });
 
   // run-all button
@@ -328,35 +340,6 @@ function saveDebounced() {
 
 // Theme toggler & sign-in UI wiring
 (function uiOverrides() {
-  // ensure toggler visible
-  const togg = document.getElementById("themeToggle");
-  if (togg) {
-    togg.style.display = "inline-flex";
-    // define cycle sequence (2 light variants + dark)
-    const themes = ["red", "white", "black"];
-    const getIndex = (t) => Math.max(0, themes.indexOf(t));
-    togg.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      const cur = document.documentElement.getAttribute("data-theme") || "red";
-      const idx = themes.indexOf(cur);
-      const next = themes[(idx + 1) % themes.length];
-      document.documentElement.setAttribute("data-theme", next);
-      // mark pressed for dark only
-      togg.setAttribute("aria-pressed", next === "black" ? "true" : "false");
-      // persist preference optionally
-      try {
-        localStorage.setItem("cibc_theme", next);
-      } catch (e) {}
-    });
-
-    // on load, apply stored theme if any
-    const stored = localStorage.getItem("cibc_theme");
-    if (stored && ["red", "white", "black"].includes(stored)) {
-      document.documentElement.setAttribute("data-theme", stored);
-      togg.setAttribute("aria-pressed", stored === "black" ? "true" : "false");
-    }
-  }
-
   // Sign-in / sign-out single button in nav-right
   function setSignedInUI(signedIn) {
     document.body.classList.toggle("signed-in", !!signedIn);
@@ -386,7 +369,8 @@ function saveDebounced() {
           sessionStorage.removeItem("cibc_api_token");
         } catch (ee) {}
         setSignedInUI(false);
-        if (window.CIBC_UI?.toast) window.CIBC_UI.toast("Signed out", { type: "info" });
+        if (window.CIBC_UI?.toast)
+          window.CIBC_UI.toast("Signed out", { type: "info" });
       };
       // reflect slight style change if you want (body.signed-in in CSS)
       document.body.classList.add("signed-in");
