@@ -8,8 +8,8 @@
   // small helpers
   const DEMO_JIRA = "vishal-jira";
   const DEMO_TOKEN = "vishal-token";
-  const DEMO_EMAIL = "vishal.tripathy@cibc.com";
-  const DEMO_PW = "CIBC@project123";
+  const DEMO_EMAIL = "vishal@project.com";
+  const DEMO_PW = "project123";
 
   function toast(msg, opts = {}) {
     if (window.CIBC_UI && typeof window.CIBC_UI.toast === "function") {
