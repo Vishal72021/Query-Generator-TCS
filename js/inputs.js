@@ -216,3 +216,71 @@
     return /^[A-Za-z0-9_-]+$/.test(inp.value || "");
   };
 })();
+
+// inputs.js — small helper to keep floating labels in sync
+(function () {
+  const groups = Array.from(document.querySelectorAll(".input-group"));
+
+  function updateGroup(g) {
+    const input = g.querySelector("input");
+    if (!input) return;
+    if ((input.value || "").toString().trim().length > 0) {
+      g.classList.add("has-value");
+    } else {
+      g.classList.remove("has-value");
+    }
+  }
+
+  groups.forEach((g) => {
+    const input = g.querySelector("input");
+    if (!input) return;
+
+    // initial state
+    updateGroup(g);
+
+    // on input changes
+    input.addEventListener("input", () => updateGroup(g));
+    input.addEventListener("change", () => updateGroup(g));
+    // handles autofill or programmatic changes
+    input.addEventListener("blur", () => updateGroup(g));
+
+    // wire clear button inside group .input-action (if present)
+    const clearBtn = g.querySelector(".input-action");
+    if (clearBtn) {
+      clearBtn.addEventListener("click", (ev) => {
+        // if it's a real clear button, clear the input
+        if (input.value && input.value.length) {
+          input.value = "";
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+          input.focus();
+        } else {
+          // optionally, if it's used for another action, do nothing
+        }
+      });
+    }
+  });
+
+  // global observer (optional): watches for newly added input groups and initializes them
+  const ro = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      for (const node of m.addedNodes) {
+        if (!(node instanceof HTMLElement)) continue;
+        if (node.matches && node.matches(".input-group")) {
+          // re-run initial wiring for this new group
+          const ev = new Event("input", { bubbles: true });
+          const input = node.querySelector("input");
+          if (input) input.dispatchEvent(ev);
+        } else {
+          // maybe a child contains groups:
+          node.querySelectorAll &&
+            node.querySelectorAll(".input-group").forEach((g) => {
+              const input = g.querySelector("input");
+              if (input)
+                input.dispatchEvent(new Event("input", { bubbles: true }));
+            });
+        }
+      }
+    }
+  });
+  ro.observe(document.body, { childList: true, subtree: true });
+})();

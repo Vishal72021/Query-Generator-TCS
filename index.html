@@ -20,12 +20,12 @@
     <link rel="stylesheet" href="css/inputs.css" />
   </head>
 
-  <body class="font-ui">
+  <body class="font-ui" data-page="main">
     <div class="app">
       <div class="main-wrap">
         <!-- NAVBAR -->
-        <header class="navbar">
-          <div class="nav-row">
+        <header class="navbar" role="banner" aria-label="Top navigation">
+          <div class="nav-row container">
             <!-- Left -->
             <div class="nav-left">
               <div class="brand">CIBC</div>
@@ -33,16 +33,21 @@
             </div>
 
             <!-- Center nav -->
-            <nav class="nav-center">
+            <nav class="nav-center" aria-label="Primary">
               <a href="#" class="muted">Home</a>
               <a href="#" class="muted">Docs</a>
               <a href="#" class="muted">Contact</a>
             </nav>
 
             <!-- Right -->
-            <div class="nav-right">
-              <a class="btn signup" href="#">Sign up</a>
-              <button id="themeToggle" class="btn ghost" aria-pressed="false">
+            <div class="nav-right" aria-hidden="false">
+              <!-- Sign control is managed by JS; we only keep the theme toggle here -->
+              <button
+                id="themeToggle"
+                class="btn ghost"
+                aria-pressed="false"
+                title="Toggle theme"
+              >
                 🌗
               </button>
             </div>
@@ -53,7 +58,7 @@
         <main>
           <!-- INTRO SECTION (JIRA BLOCK) -->
           <section class="intro" aria-labelledby="introHeading">
-            <div class="intro-grid">
+            <div class="intro-grid container">
               <div>
                 <h1 id="introHeading">Welcome to CIBC's query generator</h1>
                 <p class="muted">
@@ -73,7 +78,11 @@
                       </svg>
                     </span>
 
-                    <input id="jiraKey" type="text" />
+                    <input
+                      id="jiraKey"
+                      type="text"
+                      aria-label="Enter JIRA key to generate"
+                    />
                     <label class="floating-label" for="jiraKey"
                       >Enter JIRA key to generate</label
                     >
@@ -91,7 +100,7 @@
                   </button>
                 </div>
 
-                <!-- NEW: Error line goes here, *below* the row so it never squeezes -->
+                <!-- Error line below the row -->
                 <div
                   id="jiraError"
                   class="input-error hidden"
@@ -100,6 +109,14 @@
                 >
                   Invalid JIRA key. Please enter a valid alphanumeric ticket.
                 </div>
+              </div>
+
+              <!-- subtle decorative art (uses the uploaded file path) -->
+              <div class="intro-art" aria-hidden="true">
+                <img
+                  src="/mnt/data/ae120e1d-9917-471a-888f-7e8b8c5c4346.jpeg"
+                  alt=""
+                />
               </div>
             </div>
           </section>
@@ -119,7 +136,12 @@
                 </svg>
               </span>
 
-              <input id="apiKey" type="password" placeholder="" />
+              <input
+                id="apiKey"
+                type="password"
+                placeholder=""
+                aria-label="Paste API token"
+              />
               <label class="floating-label" for="apiKey">Paste API token</label>
               <button
                 class="input-action"
@@ -130,15 +152,9 @@
               </button>
             </div>
 
-            <button
-              style="margin-top: 10px"
-              id="connectBtn"
-              class="btn primary"
-            >
-              Connect
-            </button>
+            <button id="connectBtn" class="btn primary mt-12">Connect</button>
 
-            <div class="tips">
+            <div class="tips mt-12">
               <p><strong>Tips</strong></p>
               <p>
                 Prefix with <code>// sql</code> or <code>// python</code> to
@@ -147,9 +163,13 @@
               <p>Notebook auto-saves to local storage.</p>
             </div>
 
-            <div class="actions-inline">
-              <button id="importBtn" class="btn ghost">Import</button>
-              <button id="exportBtn" class="btn ghost">Export</button>
+            <div class="actions-inline mt-12">
+              <button id="importBtn" class="btn ghost" data-action="process">
+                Import
+              </button>
+              <button id="exportBtn" class="btn ghost" data-action="process">
+                Export
+              </button>
             </div>
           </aside>
 
@@ -160,21 +180,102 @@
             <div id="cells" class="cells" role="list">
               <!-- CELL 1 -->
               <article class="cell" tabindex="-1" role="listitem">
-                <div class="drag-handle" aria-hidden="true">≡</div>
+                <div
+                  class="reorder-handle drag-handle"
+                  title="Drag to reorder"
+                  aria-hidden="true"
+                >
+                  ≡
+                </div>
+
+                <!-- Floating mini-toolbar (appears on hover/focus) -->
+                <div
+                  class="cell-toolbar"
+                  role="toolbar"
+                  aria-label="Cell actions"
+                >
+                  <button
+                    class="tool"
+                    data-action="clone"
+                    title="Clone cell"
+                    aria-label="Clone"
+                  >
+                    📄
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="run"
+                    title="Run cell"
+                    aria-label="Run"
+                  >
+                    ▶
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="edit"
+                    title="Edit cell"
+                    aria-label="Edit"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="up"
+                    title="Move up"
+                    aria-label="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="down"
+                    title="Move down"
+                    aria-label="Move down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="delete"
+                    title="Delete"
+                    aria-label="Delete"
+                  >
+                    🗑
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="ai-explain"
+                    title="Explain (AI)"
+                    aria-label="Explain"
+                  >
+                    💡
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="ai-fix"
+                    title="Fix (AI)"
+                    aria-label="Fix"
+                  >
+                    🔧
+                  </button>
+                </div>
 
                 <div class="content">
                   <!-- set class 'code-10' so CSS can size it for 10 lines -->
-                  <div
-                    class="code code-10"
-                    contenteditable="false"
-                    spellcheck="false"
-                  >
-                    # Example cell 1 print('Hello world')
+                  <div class="card">
+                    <div
+                      class="code code-10"
+                      contenteditable="false"
+                      spellcheck="false"
+                      aria-label="Cell code"
+                    >
+                      # Example cell 1 print('Hello world')
+                    </div>
                   </div>
                 </div>
               </article>
 
-              <!-- ADD-BETWEEN BUTTON (placed between cell 1 and cell 2) -->
+              <!-- ADD-BETWEEN BUTTON (between cells) -->
               <div class="add-between" role="separator" aria-hidden="true">
                 <button class="btn add-between-btn" title="Add cell">
                   ＋ Add cell
@@ -183,20 +284,100 @@
 
               <!-- CELL 2 -->
               <article class="cell" tabindex="-1" role="listitem">
-                <div class="drag-handle" aria-hidden="true">≡</div>
+                <div
+                  class="reorder-handle drag-handle"
+                  title="Drag to reorder"
+                  aria-hidden="true"
+                >
+                  ≡
+                </div>
+
+                <div
+                  class="cell-toolbar"
+                  role="toolbar"
+                  aria-label="Cell actions"
+                >
+                  <button
+                    class="tool"
+                    data-action="clone"
+                    title="Clone cell"
+                    aria-label="Clone"
+                  >
+                    📄
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="run"
+                    title="Run cell"
+                    aria-label="Run"
+                  >
+                    ▶
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="edit"
+                    title="Edit cell"
+                    aria-label="Edit"
+                  >
+                    ✎
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="up"
+                    title="Move up"
+                    aria-label="Move up"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="down"
+                    title="Move down"
+                    aria-label="Move down"
+                  >
+                    ↓
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="delete"
+                    title="Delete"
+                    aria-label="Delete"
+                  >
+                    🗑
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="ai-explain"
+                    title="Explain (AI)"
+                    aria-label="Explain"
+                  >
+                    💡
+                  </button>
+                  <button
+                    class="tool"
+                    data-action="ai-fix"
+                    title="Fix (AI)"
+                    aria-label="Fix"
+                  >
+                    🔧
+                  </button>
+                </div>
 
                 <div class="content">
-                  <div
-                    class="code code-10"
-                    contenteditable="false"
-                    spellcheck="false"
-                  >
-                    # Example cell 2 for i in range(3): print(i)
+                  <div class="card">
+                    <div
+                      class="code code-10"
+                      contenteditable="false"
+                      spellcheck="false"
+                      aria-label="Cell code"
+                    >
+                      # Example cell 2 for i in range(3): print(i)
+                    </div>
                   </div>
                 </div>
               </article>
 
-              <!-- ADD-BETWEEN BUTTON (after last existing cell; more can be generated dynamically) -->
+              <!-- ADD-BETWEEN BUTTON (after last existing cell) -->
               <div class="add-between" role="separator" aria-hidden="true">
                 <button class="btn add-between-btn" title="Add cell">
                   ＋ Add cell
@@ -204,17 +385,60 @@
               </div>
             </div>
 
-            <!-- Notebook actions -->
-            <div class="actions-inline">
-              <button id="runAllBtn" class="btn primary">Run all cells</button>
-              <button id="updateDeltaBtn" class="btn ghost">
+            <!-- actions above bottom -->
+            <div class="actions-inline mt-12">
+              <button id="runAllBtn" class="btn primary" disabled>
+                Run all cells
+              </button>
+              <button id="updateDeltaBtn" class="btn ghost" disabled>
                 Update to Delta table
               </button>
             </div>
 
-            <div class="bottom-actions">
+            <!-- Notebook bottom actions (updated: Upload to SharePoint next to Run as new notebook) -->
+            <div class="bottom-actions" style="align-items: center; gap: 12px">
+              <div style="flex: 1"></div>
+              <!-- pushes buttons to the right -->
+
               <button id="runAsNewBtn" class="btn primary">
                 Run as new notebook
+              </button>
+
+              <!-- Upload to SharePoint (demo redirect) -->
+              <button
+                id="uploadSharePointBtn"
+                class="btn upload"
+                title="Upload to SharePoint"
+              >
+                <span>Upload to SharePoint</span>
+                <svg
+                  style="width: 16px; height: 16px; margin-left: 8px"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M12 3v12"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M8 7l4-4 4 4"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M5 21h14"
+                    stroke="currentColor"
+                    stroke-width="1.6"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </svg>
               </button>
             </div>
           </section>
@@ -222,7 +446,7 @@
       </div>
     </div>
 
-    <!-- SIGNUP / SIGN IN MODAL -->
+    <!-- SIGN IN MODAL -->
     <div
       id="signupModal"
       class="modal hidden"
@@ -237,6 +461,7 @@
           <h3 id="signupTitle">Sign in</h3>
           <button class="modal-close" aria-label="Close">✕</button>
         </header>
+
         <div class="modal-body">
           <p class="muted">
             Use demo credentials or continue with your account.
@@ -277,17 +502,14 @@
       </div>
     </div>
 
-    <!-- JS -->
+    <!-- JS (keep original order) -->
     <script type="module" src="js/runner-pyodide.js"></script>
-    <script type="module" src="js/runner-duckdb.js"></script>
     <script type="module" src="js/runner.js"></script>
     <script type="module" src="js/dragdrop.js"></script>
-    <script type="module" src="js/ai.js"></script>
-    <script type="module" src="js/delta-sim.js"></script>
     <script type="module" src="js/wiring.js"></script>
     <script type="module" src="js/import-export.js"></script>
 
-    <!-- keep UI enhancements last -->
+    <!-- UI enhancements -->
     <script type="module" src="js/ui.js"></script>
     <script type="module" src="js/inputs.js"></script>
     <script type="module" src="js/auth-demo.js"></script>

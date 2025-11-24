@@ -1,34 +1,32 @@
-/* css/components.css
-   Components & UI polish (Option B - modern red buttons)
-   Works with tokens.css and layout.css
-   - Replace your existing components.css with this file
+/* css/components.css — cleaned & consolidated
+   Unified toolbar styles + polished components.
+   Works with tokens.css (uses --accent, --accent-rgb, --surface, --glass-border, etc.)
 */
 
-/* -------------------------
-   Fallback tokens (used if tokens.css didn't load)
-   ------------------------- */
+/* ---------- Fallback tokens (only used if tokens.css not loaded) ---------- */
 :root {
   --accent: #b81d1d;
   --accent-600: #9f1414;
   --accent-rgb: 184, 29, 29;
   --accent-600-rgb: 159, 20, 20;
   --surface: #ffffff;
+  --surface-2: #fbfbfb;
   --text: #0f1720;
   --muted: #6b7280;
   --glass-border: rgba(15, 23, 32, 0.04);
   --radius: 12px;
   --shadow-1: 0 6px 18px rgba(2, 6, 23, 0.06);
-  --shadow-2: 0 12px 36px rgba(2, 6, 23, 0.1);
-  --shadow-3: 0 18px 56px rgba(2, 6, 23, 0.14);
+  --shadow-2: 0 12px 36px rgba(2, 6, 23, 0.08);
+  --shadow-3: 0 18px 56px rgba(2, 6, 23, 0.12);
   --motion-md: 220ms;
-  --easing-default: cubic-bezier(0.2, 0.9, 0.25, 1);
-  --focus-ring: 0 0 0 6px rgba(184, 29, 29, 0.12);
+  --easing-default: cubic-bezier(0.2, 0.95, 0.28, 1);
+  --focus-ring: 0 0 0 6px rgba(184, 29, 29, 0.08);
   --z-toolbar: 700;
+  --code-font-size: 13.5px;
+  --code-line-height: 1.45;
 }
 
-/* -------------------------
-   Base resets & typography
-   ------------------------- */
+/* ---------- Base resets & typography ---------- */
 * {
   box-sizing: border-box;
 }
@@ -37,17 +35,8 @@ body {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: var(
-    --font-sans,
-    Inter,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    Arial
-  );
+  font-family: var(--font-sans, Inter, system-ui);
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 a {
   color: inherit;
@@ -57,88 +46,77 @@ a {
   color: var(--muted);
 }
 
-/* ----------------------------------------------------
-   INPUT FIELDS — Modern Red Theme
-   ---------------------------------------------------- */
+/* ---------- Inputs (modern) ---------- */
+.input-group {
+  position: relative;
+}
+.input-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+.input-action {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: 0;
+  padding: 6px;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
 input[type="text"],
 input[type="password"],
 input:not([type]) {
   width: 100%;
   padding: 10px 12px;
-  font-size: 14px;
-  font-family: var(--font-sans);
-  color: var(--text);
-
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.9),
-    rgba(255, 255, 255, 0.75)
-  );
-
+  padding-left: 38px;
+  padding-right: 42px;
   border-radius: calc(var(--radius) - 6px);
-  border: 1px solid rgba(var(--accent-rgb), 0.25);
-  outline: none;
-
-  transition: border-color var(--motion-md) var(--easing),
-    box-shadow var(--motion-md) var(--easing),
-    background var(--motion-md) var(--easing);
-}
-
-/* Hover */
-input[type="text"]:hover,
-input[type="password"]:hover,
-input:not([type]):hover {
-  border-color: rgba(var(--accent-rgb), 0.4);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 1),
-    rgba(255, 255, 255, 0.82)
+    rgba(255, 255, 255, 0.95),
+    rgba(255, 255, 255, 0.88)
   );
+  font-size: 14px;
+  color: var(--text);
+  transition: border-color var(--motion-md) var(--easing-default),
+    box-shadow var(--motion-md) var(--easing-default);
 }
-
-/* Focus */
-input[type="text"]:focus,
-input[type="password"]:focus,
-input:not([type]):focus {
-  border-color: rgba(var(--accent-rgb), 0.55);
-  background: #fff;
-  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), 0.28),
-    0 4px 16px rgba(var(--accent-rgb), 0.25);
-}
-
-/* Placeholder styling */
 input::placeholder {
   color: var(--muted);
-  opacity: 0.7;
+  opacity: 0.8;
+}
+input:focus {
+  border-color: rgba(var(--accent-rgb), 0.55);
+  box-shadow: 0 6px 18px rgba(var(--accent-rgb), 0.12);
 }
 
-/* Disabled */
-input:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  background: rgba(255, 255, 255, 0.4);
-  border-color: rgba(0, 0, 0, 0.08);
+.floating-label {
+  position: absolute;
+  left: 44px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
+  transition: transform var(--motion-md) var(--easing-default),
+    font-size var(--motion-md) var(--easing-default),
+    opacity var(--motion-md) var(--easing-default);
+}
+.input-group.has-value .floating-label,
+input:focus + .floating-label {
+  transform: translateY(-150%);
+  font-size: 12px;
+  color: var(--accent);
 }
 
-/* For API key/password fields */
-input[type="password"] {
-  letter-spacing: 0.5px;
-}
-
-/* Narrow screen optimization */
-@media (max-width: 520px) {
-  input[type="text"],
-  input[type="password"],
-  input:not([type]) {
-    padding: 9px 10px;
-    font-size: 13px;
-  }
-}
-
-/* -------------------------
-   Modern Red Button System (Option B)
-   ------------------------- */
+/* ---------- Buttons: base / primary / ghost / signup ---------- */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -148,117 +126,152 @@ input[type="password"] {
   min-height: 40px;
   font-weight: 600;
   font-size: 14px;
-  border-radius: calc(var(--radius, 12px) - 4px);
-  border: 1px solid rgba(var(--accent-rgb, 184, 29, 29), 0.28);
+  border-radius: calc(var(--radius) - 4px); /* <- fixed calc spacing */
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
   background: linear-gradient(
     180deg,
-    rgba(var(--accent-rgb, 184, 29, 29), 0.14),
-    rgba(var(--accent-rgb, 184, 29, 29), 0.08)
+    rgba(var(--accent-rgb), 0.12),
+    rgba(var(--accent-rgb), 0.06)
   );
   color: var(--accent);
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(var(--accent-rgb, 184, 29, 29), 0.12);
-  transition: transform var(--motion-md, 220ms)
-      var(--easing-default, cubic-bezier(0.2, 0.9, 0.25, 1)),
-    box-shadow var(--motion-md, 220ms) var(--easing-default),
-    background var(--motion-md, 220ms) var(--easing-default);
-  border-style: solid;
-  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.18);
-  text-decoration: none;
+  box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.12);
+  transition: transform var(--motion-md) var(--easing-default),
+    box-shadow var(--motion-md) var(--easing-default);
 }
-
 .btn:hover {
   transform: translateY(-2px);
   background: linear-gradient(
     180deg,
-    rgba(var(--accent-rgb, 184, 29, 29), 0.22),
-    rgba(var(--accent-rgb, 184, 29, 29), 0.12)
+    rgba(var(--accent-rgb), 0.22),
+    rgba(var(--accent-rgb), 0.12)
   );
-  box-shadow: 0 6px 16px rgba(var(--accent-rgb, 184, 29, 29), 0.18);
+  box-shadow: 0 6px 16px rgba(var(--accent-rgb), 0.16);
 }
-
 .btn:active {
   transform: translateY(0) scale(0.98);
-  background: rgba(var(--accent-rgb, 184, 29, 29), 0.22);
 }
 
-/* Primary (strong red) */
 .btn.primary {
   background: linear-gradient(
     180deg,
-    rgba(var(--accent-rgb, 184, 29, 29), 0.92),
-    rgba(var(--accent-600-rgb, 159, 20, 20), 0.98)
+    rgba(var(--accent-rgb), 0.94),
+    rgba(var(--accent-600-rgb), 0.98)
   );
   color: #fff;
-  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.38);
-  box-shadow: 0 8px 24px rgba(var(--accent-rgb, 184, 29, 29), 0.28);
+  border-color: rgba(var(--accent-rgb), 0.38);
+  box-shadow: 0 8px 24px rgba(var(--accent-rgb), 0.22);
 }
-
 .btn.primary:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(var(--accent-rgb, 184, 29, 29), 1),
-    rgba(var(--accent-600-rgb, 159, 20, 20), 1)
-  );
-  box-shadow: 0 10px 30px rgba(var(--accent-rgb, 184, 29, 29), 0.32);
+  box-shadow: 0 10px 30px rgba(var(--accent-rgb), 0.28);
 }
 
-.btn.primary:active {
-  transform: translateY(0) scale(0.97);
-  background: rgba(var(--accent-600-rgb, 159, 20, 20), 1);
+.btn.ghost {
+  background: transparent;
+  border: 1px solid rgba(var(--accent-rgb), 0.18);
+  color: var(--accent);
 }
 
-/* Signup pill */
 .btn.signup {
   border-radius: 999px;
   background: #fff;
   color: var(--accent);
-  border-color: rgba(var(--accent-rgb, 184, 29, 29), 0.35);
-  box-shadow: 0 6px 18px rgba(var(--accent-rgb, 184, 29, 29), 0.06);
+  border-color: rgba(var(--accent-rgb), 0.35);
 }
-.btn.signup:hover {
-  background: rgba(var(--accent-rgb, 184, 29, 29), 0.1);
-}
-
-/* Ghost but reddish */
-.btn.ghost {
-  background: transparent;
-  border: 1px solid rgba(var(--accent-rgb, 184, 29, 29), 0.25);
-  color: var(--accent);
-}
-.btn.ghost:hover {
-  background: rgba(var(--accent-rgb, 184, 29, 29), 0.1);
-}
-
-/* Small variant */
 .btn.small {
   padding: 6px 10px;
   font-size: 13px;
   min-height: 34px;
 }
-
-/* Disabled */
 .btn[disabled],
 .btn.disabled {
   opacity: 0.55;
   cursor: not-allowed;
-  transform: none;
   box-shadow: none;
+  transform: none;
 }
 
-/* -------------------------
-   Micro interactions
-   ------------------------- */
-.elastic-click {
-  transition: transform 160ms var(--easing-default);
+/* ---------- Upload button (strong primary variant) ---------- */
+.btn.upload {
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb), 0.94),
+    rgba(var(--accent-600-rgb), 0.98)
+  );
+  color: #fff;
+  border-color: rgba(var(--accent-rgb), 0.38);
+  box-shadow: 0 8px 26px rgba(var(--accent-rgb), 0.22);
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  border-radius: 10px;
 }
-.elastic-click:active {
-  transform: scale(0.96);
+.btn.upload:hover {
+  transform: translateY(-2px);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb), 1),
+    rgba(var(--accent-600-rgb), 1)
+  );
+  box-shadow: 0 12px 32px rgba(var(--accent-rgb), 0.3);
+}
+.btn.upload:active {
+  transform: translateY(0) scale(0.98);
 }
 
-/* -------------------------
-   Tooltip
-   ------------------------- */
+/* Ensure icon inside upload keeps white contrast */
+.btn.upload svg {
+  color: #fff;
+  opacity: 0.95;
+  flex-shrink: 0;
+}
+
+/* ---------- Add-between / Add-cell buttons (clean, no dark tint) ---------- */
+/* We DO NOT create duplicate content via pseudo-elements; rely on button text */
+.add-between-btn,
+.btn.add-cell-btn {
+  background: #ffffff; /* flat white pill */
+  color: var(--accent);
+  font-weight: 700;
+  border: 1px solid rgba(var(--accent-rgb), 0.12);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+  padding: 10px 16px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+/* If the HTML already contains the text, do not use ::before — keep plain button text */
+/* Remove any right-side icon that shows as pseudo or inline svg for these buttons */
+.add-between-btn svg,
+.add-between-btn .icon,
+.btn.add-cell-btn svg,
+.btn.add-cell-btn .icon {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Hover/focus */
+.add-between-btn:hover,
+.btn.add-cell-btn:hover {
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+  background: #ffffff;
+}
+.add-between-btn:focus,
+.btn.add-cell-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 6px rgba(var(--accent-rgb), 0.08);
+}
+
+/* ---------- Tooltip ---------- */
 .tooltip {
   position: fixed;
   z-index: 99999;
@@ -284,116 +297,117 @@ input[type="password"] {
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-/* -------------------------
-   Cell toolbar & tools
-   ------------------------- */
+/* ---------- CELL TOOLBAR (Floating mini toolbar) ---------- */
+.cell {
+  position: relative;
+}
 .cell-toolbar {
+  position: absolute;
+  top: 8px;
+  right: 10px;
   display: flex;
   gap: 6px;
   align-items: center;
   padding: 6px 8px;
-  border-radius: 999px;
-  background: var(--surface);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: var(--shadow-2);
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  z-index: var(--z-toolbar, 700);
-  transition: transform var(--motion-md) var(--easing-default),
-    opacity var(--motion-md) var(--easing-default);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 8px 20px rgba(2, 6, 23, 0.08);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 160ms var(--easing-default),
+    transform 160ms var(--easing-default);
+  z-index: var(--z-toolbar);
 }
+.cell:hover .cell-toolbar,
+.cell:focus-within .cell-toolbar {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 .cell-toolbar .tool {
   background: transparent;
   border: 0;
   padding: 6px;
   border-radius: 8px;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
+  font-size: 15px;
   color: var(--text);
+  opacity: 0.95;
+  transition: background 130ms var(--easing-default), transform 120ms;
+}
+.cell-toolbar .tool:hover {
+  background: rgba(var(--accent-rgb), 0.12);
+  color: var(--accent);
+  transform: translateY(-1px);
 }
 .cell-toolbar .tool:active {
-  transform: scale(0.96);
+  transform: scale(0.92);
+  background: rgba(var(--accent-rgb), 0.18);
 }
 
-/* toolbar tool hover indicates action */
+/* action-specific hover tints */
 .cell-toolbar .tool[data-action="delete"]:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(var(--accent-rgb, 184, 29, 29), 0.06),
-    rgba(0, 0, 0, 0.02)
-  );
   color: var(--danger, #ef4444);
 }
 .cell-toolbar .tool[data-action="run"]:hover {
-  background: linear-gradient(
-    180deg,
-    rgba(var(--accent-rgb, 184, 29, 29), 0.08),
-    rgba(0, 0, 0, 0.02)
-  );
   color: var(--accent);
 }
 
-/* small icon sizing */
-.icon {
-  width: 14px;
-  height: 14px;
-  display: inline-block;
+/* drag handle */
+.reorder-handle,
+.drag-handle {
+  user-select: none;
+  cursor: grab;
+  opacity: 0.6;
+  transition: opacity 120ms, var(--motion-md) var(--easing-default);
+  font-size: 18px;
+  padding: 6px;
+  border-radius: 8px;
+}
+.reorder-handle:hover,
+.drag-handle:hover {
+  opacity: 0.95;
+  background: rgba(var(--accent-rgb), 0.08);
+}
+.reorder-handle:active,
+.drag-handle:active {
+  cursor: grabbing;
+  transform: scale(0.98);
 }
 
-/* -------------------------
-   Sidebar glass visuals
-   ------------------------- */
-.sidebar {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.6),
-    rgba(255, 255, 255, 0.42)
-  );
-  backdrop-filter: blur(var(--glass-blur, 10px));
-  -webkit-backdrop-filter: blur(var(--glass-blur, 10px));
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-1);
+/* placeholder used during drag reorder */
+.cell-placeholder {
+  background: rgba(0, 0, 0, 0.03);
+  border: 2px dashed rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  margin: 10px 0;
+  transition: height 160ms ease, transform 140ms;
 }
 
-/* dark theme compatibility */
-html[data-theme="black"] .sidebar {
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.02),
-    rgba(255, 255, 255, 0.01)
-  );
-  border: 1px solid rgba(255, 255, 255, 0.03);
-}
-
-/* -------------------------
-   Code area (cells)
-   ------------------------- */
+/* ---------- Code area (cells) ---------- */
 .code {
   font-family: var(
     --font-mono,
+    "Fira Code",
     ui-monospace,
-    SFMono-Regular,
     Menlo,
     Monaco,
-    "Roboto Mono",
-    "Courier New",
     monospace
   );
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--code-font-size);
+  line-height: var(--code-line-height);
   color: var(--text);
   white-space: pre-wrap;
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0));
   padding: 12px;
   border-radius: 10px;
   border: 1px dashed var(--glass-border);
-  min-height: 216px;
-  max-height: calc(1.4em * 10 + 24px); /* show up to 10 lines, then scroll */
+  min-height: calc(var(--code-line-height) * var(--code-font-size) * 10);
+  max-height: calc(var(--code-line-height) * var(--code-font-size) * 10 + 24px);
   overflow: auto;
   box-sizing: border-box;
 }
@@ -404,69 +418,43 @@ html[data-theme="black"] .sidebar {
   border-color: rgba(var(--accent-rgb), 0.12);
 }
 
-/* -------------------------
-   Drag / reorder handle
-   ------------------------- */
-.reorder-handle,
-.drag-handle {
-  width: 34px;
-  height: 34px;
-  display: inline-flex;
+/* utility spacing */
+.mt-8 {
+  margin-top: 8px;
+}
+.mt-12 {
+  margin-top: 12px;
+}
+.actions-inline {
+  display: flex;
+  gap: 8px;
   align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  cursor: grab;
-  border: 1px solid rgba(0, 0, 0, 0.04);
-  background: transparent;
-}
-.reorder-handle:active,
-.drag-handle:active {
-  cursor: grabbing;
-  transform: scale(0.98);
 }
 
-/* -------------------------
-   Floating visual helpers
-   ------------------------- */
-.hover-glow {
-  position: relative;
-}
-.hover-glow::after {
-  content: "";
-  position: absolute;
-  inset: -6px;
-  border-radius: inherit;
-  z-index: -1;
-  opacity: 0;
-  transition: opacity var(--motion-md) var(--easing-default),
-    transform var(--motion-md) var(--easing-default);
-}
-.hover-glow:hover::after {
-  opacity: 1;
-  transform: scale(1.02);
-  background: rgba(var(--accent-rgb), 0.04);
+/* sidebar glass visuals (kept as previous) */
+.sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.6),
+    rgba(255, 255, 255, 0.42)
+  );
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
   box-shadow: var(--shadow-1);
+  padding: 14px;
+}
+html[data-theme="black"] .sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
-/* -------------------------
-   Accessibility & responsive
-   ------------------------- */
-.kbd {
-  background: rgba(0, 0, 0, 0.06);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-family: var(--font-mono);
-  font-size: 13px;
-}
-.sr-only {
-  position: absolute;
-  left: -10000px;
-  top: auto;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-}
-
+/* small screens */
 @media (max-width: 520px) {
   .btn {
     padding: 8px 10px;
@@ -479,7 +467,7 @@ html[data-theme="black"] .sidebar {
   }
 }
 
-/* Reduced motion */
+/* accessibility: reduced motion */
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;
@@ -487,4 +475,147 @@ html[data-theme="black"] .sidebar {
   }
 }
 
-/* End components.css */
+/* ui-overrides: toggler + sign-in visuals (kept minimal & robust) */
+
+/* Theme toggler: visible pill in nav */
+#themeToggle {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 44px;
+  height: 36px;
+  padding: 6px;
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(
+    180deg,
+    rgba(var(--accent-rgb, 184, 29, 29), 0.92),
+    rgba(var(--accent-600-rgb, 159, 20, 20), 0.98)
+  );
+  color: #fff;
+  transition: transform var(--motion-md) var(--easing-default), opacity 200ms;
+  z-index: 1200;
+}
+html[data-theme="black"] #themeToggle,
+html[data-theme="white"] #themeToggle,
+html[data-theme="red"] #themeToggle {
+  display: inline-flex !important;
+  opacity: 1 !important;
+}
+#themeToggle:active {
+  transform: scale(0.98);
+}
+
+/* Sign-in / signup pill in nav (use either .signup or .signin class) */
+.nav-right .btn.signup,
+.nav-right .btn.signin {
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-weight: 700;
+  background: #fff;
+  color: var(--accent);
+  border: 1px solid rgba(var(--accent-rgb), 0.22);
+  box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.nav-right .btn.signup:hover,
+.nav-right .btn.signin:hover {
+  background: linear-gradient(180deg, #fff, rgba(255, 255, 255, 0.95));
+  transform: translateY(-2px);
+}
+/* when logged-in body flag used, tweak look */
+body.signed-in .nav-right .btn.signup {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+}
+
+/* -------------------------
+   Modal styles (append to components.css)
+   ------------------------- */
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 1400;
+  pointer-events: none;
+}
+.modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 10, 15, 0.48);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  opacity: 1;
+}
+.modal-panel {
+  pointer-events: auto;
+  z-index: 1401;
+  min-width: 320px;
+  max-width: 560px;
+  width: calc(100% - 48px);
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 28px 80px rgba(2, 6, 23, 0.28);
+  border: 1px solid var(--glass-border);
+  overflow: hidden;
+  transform: translateY(-6px);
+  transition: transform 200ms var(--easing-default),
+    opacity 200ms var(--easing-default);
+}
+.modal.hidden .modal-panel {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.995);
+}
+.modal-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+}
+.modal-body {
+  padding: 14px;
+  background: linear-gradient(180deg, var(--surface), var(--surface-2));
+}
+.modal-close {
+  background: transparent;
+  border: 0;
+  font-size: 16px;
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.modal-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(var(--accent-rgb, 184, 29, 29), 0.12);
+  margin-top: 6px;
+  box-sizing: border-box;
+}
+.modal-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--muted);
+}
+.modal .muted {
+  color: var(--muted);
+}
+@media (max-width: 520px) {
+  .modal-panel {
+    width: calc(100% - 28px);
+    min-width: 0;
+  }
+}
+
+/* End of components.css */

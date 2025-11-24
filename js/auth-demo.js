@@ -1,22 +1,132 @@
 // js/auth-demo.js
-// Demo authentication flow for JIRA (vishal-jira) and API token (vishal-token).
-// Enhancements: persistent state, sign-up -> sign-out toggle, protect actions, modal keyboard UX.
-// Relies on window.CIBC_UI.toast for toasts if available.
+// Demo authentication & UI wiring
+// - JIRA demo key: "vishal-jira"
+// - API demo token: "vishal-token"
+// - Modal sign-in: email= "vishal.tripathy@cibc.com", password = "CIBC@project123"
 
 (function () {
-  // Resolve scope root reliably (works if you use body[data-page="main"] or plain body)
-  const ROOT =
-    document.querySelector('body[data-page="main"]') || document.body;
+  // small helpers
+  const DEMO_JIRA = "vishal-jira";
+  const DEMO_TOKEN = "vishal-token";
+  const DEMO_EMAIL = "vishal.tripathy@cibc.com";
+  const DEMO_PW = "CIBC@project123";
 
-  function qs(sel) {
-    return ROOT.querySelector(sel);
-  }
-  function qsa(sel) {
-    return Array.from(ROOT.querySelectorAll(sel));
+  function toast(msg, opts = {}) {
+    if (window.CIBC_UI && typeof window.CIBC_UI.toast === "function") {
+      window.CIBC_UI.toast(msg, opts);
+    } else {
+      console.log("Toast:", msg, opts);
+    }
   }
 
-  function ensureErrorContainer(wrapper, id, defaultMsg = "") {
-    let err = wrapper.querySelector(`#${id}`);
+  function qs(sel, root = document) {
+    return root.querySelector(sel);
+  }
+  function qsa(sel, root = document) {
+    return Array.from((root || document).querySelectorAll(sel));
+  }
+
+  // utility: ensure there is a single sign button in .nav-right inserted before the theme toggler
+  function ensureSignButton() {
+    const navRight = qs(".nav-right");
+    if (!navRight) return null;
+
+    // remove stray sign-out buttons that are not the primary one (defensive)
+    qsa(".nav-right .btn.signin, .nav-right .btn.signup").forEach((b, i) => {
+      // keep only the first one
+      if (i > 0) b.remove();
+    });
+
+    let btn = navRight.querySelector(".btn.signin, .btn.signup");
+    const togg = qs("#themeToggle");
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.className = "btn signup";
+      // insert before theme toggler if present, else append
+      if (togg) navRight.insertBefore(btn, togg);
+      else navRight.appendChild(btn);
+    } else {
+      // ensure it sits before the toggler
+      if (togg && btn.nextElementSibling !== togg) {
+        navRight.insertBefore(btn, togg);
+      }
+    }
+    return btn;
+  }
+
+  // protect or enable action buttons depending on state
+  function setActionProtection({
+    apiConnected = false,
+    signedIn = false,
+  } = {}) {
+    // Protected until API validated: updateDeltaBtn
+    const updateBtn = qs("#updateDeltaBtn");
+    if (updateBtn) {
+      updateBtn.disabled = !apiConnected;
+      updateBtn.classList.toggle("disabled", !apiConnected);
+    }
+
+    // runAll & runAsNew are enabled after sign-in (even without API) per requirement
+    const runAll = qs("#runAllBtn");
+    const runNew = qs("#runAsNewBtn");
+    if (runAll) {
+      runAll.disabled = !signedIn;
+      runAll.classList.toggle("disabled", !signedIn);
+    }
+    if (runNew) {
+      runNew.disabled = !signedIn;
+      runNew.classList.toggle("disabled", !signedIn);
+    }
+
+    // protect import/export until API is validated (optional)
+    qsa("#importBtn, #exportBtn").forEach((b) => {
+      b.disabled = !apiConnected;
+      b.classList.toggle("disabled", !apiConnected);
+    });
+  }
+
+  // update navbar sign-in/out button state
+  function applySignButton(signedIn) {
+    const btn = ensureSignButton();
+    if (!btn) return;
+    btn.onclick = null;
+    if (signedIn) {
+      btn.textContent = "Sign out";
+      btn.classList.remove("signup");
+      btn.classList.add("signin");
+      btn.onclick = (e) => {
+        e.preventDefault();
+        // clear persisted demo credentials and sign-in flag
+        try {
+          localStorage.removeItem("cibc_jira_key");
+          sessionStorage.removeItem("cibc_api_token");
+          sessionStorage.removeItem("cibc_signed_in");
+        } catch (err) {}
+        toast("Signed out (demo)", { type: "info", duration: 1200 });
+        applySignButton(false);
+        setActionProtection({ apiConnected: false, signedIn: false });
+      };
+    } else {
+      btn.textContent = "Sign in";
+      btn.classList.remove("signin");
+      btn.classList.add("signup");
+      btn.onclick = (e) => {
+        e.preventDefault();
+        const modal = qs("#signupModal");
+        if (modal) {
+          modal.classList.remove("hidden");
+          modal.setAttribute("aria-hidden", "false");
+          const u = modal.querySelector("#modalUser");
+          if (u) setTimeout(() => u.focus(), 40);
+        }
+      };
+    }
+  }
+
+  // ensure single error container appended under right parent
+  function ensureErrorContainer(parent, id, defaultMsg = "") {
+    if (!parent) parent = document.body;
+    let err = parent.querySelector(`#${id}`);
     if (!err) {
       err = document.createElement("div");
       err.id = id;
@@ -24,11 +134,10 @@
       err.setAttribute("role", "status");
       err.setAttribute("aria-live", "polite");
       if (defaultMsg) err.textContent = defaultMsg;
-      wrapper.appendChild(err);
+      parent.appendChild(err);
     }
     return err;
   }
-
   function showError(group, inputEl, errEl, message) {
     if (group) group.classList.add("invalid");
     if (inputEl) inputEl.setAttribute("aria-invalid", "true");
@@ -38,7 +147,6 @@
       errEl.classList.add("show");
     }
   }
-
   function hideError(group, inputEl, errEl) {
     if (group) group.classList.remove("invalid");
     if (inputEl) inputEl.removeAttribute("aria-invalid");
@@ -48,421 +156,201 @@
     }
   }
 
-  function toast(msg, opts = {}) {
-    if (window.CIBC_UI && typeof window.CIBC_UI.toast === "function") {
-      window.CIBC_UI.toast(msg, opts);
-    } else {
-      // fallback
-      console.log("Toast:", msg);
+  // wire theme toggler — robust cycle between red -> white -> black
+  function wireThemeToggler() {
+    const togg = qs("#themeToggle");
+    if (!togg) return;
+    const themes = ["red", "white", "black"];
+    function currentTheme() {
+      return document.documentElement.getAttribute("data-theme") || "red";
     }
-  }
-
-  // demo credentials
-  const DEMO_JIRA = "vishal-jira";
-  const DEMO_TOKEN = "vishal-token";
-
-  // small helper to simulate async auth
-  function delay(ms = 700) {
-    return new Promise((res) => setTimeout(res, ms));
-  }
-
-  // Helper: are we signed in (both demo creds present)?
-  function isSignedIn() {
-    try {
-      return (
-        localStorage.getItem("cibc_jira_key") === DEMO_JIRA &&
-        sessionStorage.getItem("cibc_api_token") === DEMO_TOKEN
-      );
-    } catch (e) {
-      return false;
+    function applyTheme(t) {
+      document.documentElement.setAttribute("data-theme", t);
+      togg.setAttribute("aria-pressed", t === "black" ? "true" : "false");
+      try {
+        localStorage.setItem("cibc_theme", t);
+      } catch (e) {}
     }
-  }
-
-  // reflect persisted state to UI and update signup control
-  function applyAuthState() {
-    const jiraKey = localStorage.getItem("cibc_jira_key");
-    const apiToken = sessionStorage.getItem("cibc_api_token");
-
-    // buttons
-    const btnAuth = qs("#authenticateBtn");
-    const btnConnect = qs("#connectBtn");
-
-    // small status badges (create if missing)
-    function ensureBadge(el, id) {
-      if (!el) return null;
-      let badge = el.parentElement.querySelector(`#${id}`);
-      if (!badge) {
-        badge = document.createElement("span");
-        badge.id = id;
-        badge.className = "muted small auth-badge";
-        badge.style.marginLeft = "8px";
-        el.parentElement.appendChild(badge);
-      }
-      return badge;
-    }
-
-    const badgeAuth = ensureBadge(btnAuth, "jiraStatus");
-    const badgeConn = ensureBadge(btnConnect, "apiStatus");
-
-    if (jiraKey === DEMO_JIRA) {
-      if (btnAuth) {
-        btnAuth.textContent = "Authenticated";
-        btnAuth.classList.add("disabled");
-        btnAuth.setAttribute("aria-pressed", "true");
-      }
-      if (badgeAuth) badgeAuth.textContent = "JIRA: connected";
-    } else {
-      if (btnAuth) {
-        btnAuth.textContent = "Authenticate";
-        btnAuth.classList.remove("disabled");
-        btnAuth.removeAttribute("aria-pressed");
-      }
-      if (badgeAuth) badgeAuth.textContent = "";
-    }
-
-    if (apiToken === DEMO_TOKEN) {
-      if (btnConnect) {
-        btnConnect.textContent = "Authenticated";
-        btnConnect.classList.add("disabled");
-        btnConnect.setAttribute("aria-pressed", "true");
-      }
-      if (badgeConn) badgeConn.textContent = "API: connected";
-    } else {
-      if (btnConnect) {
-        btnConnect.textContent = "Connect";
-        btnConnect.classList.remove("disabled");
-        btnConnect.removeAttribute("aria-pressed");
-      }
-      if (badgeConn) badgeConn.textContent = "";
-    }
-
-    // Protect key actions if API is not connected
-    setActionProtection(Boolean(apiToken === DEMO_TOKEN));
-
-    // Update signup control in navbar
-    updateSignupControl();
-  }
-
-  // Disable or enable critical action buttons when not connected
-  function setActionProtection(allowed) {
-    // action selectors to protect
-    const protectedSelectors = [
-      "#importBtn",
-      "#exportBtn",
-      "#runAllBtn",
-      "#updateDeltaBtn",
-      "#runAsNewBtn",
-      ".add-between-btn",
-      "#addFinalBtn",
-    ];
-    protectedSelectors.forEach((sel) => {
-      qsa(sel).forEach((el) => {
-        // when allowed == false, disable the element and add tooltip/title
-        if (!allowed) {
-          el.dataset._wasDisabled = el.disabled ? "1" : "0";
-          el.disabled = true;
-          el.classList.add("disabled");
-          if (!el.getAttribute("data-protect-tooltip")) {
-            el.setAttribute("data-protect-tooltip", "Requires API connection");
-            // set title for simple UX fallback
-            el.setAttribute("title", "Requires API connection");
-          }
-        } else {
-          // restore previous
-          if (el.dataset._wasDisabled === "0") el.disabled = false;
-          el.classList.remove("disabled");
-          if (el.getAttribute("data-protect-tooltip")) {
-            el.removeAttribute("data-protect-tooltip");
-            el.removeAttribute("title");
-          }
-        }
-      });
+    // load saved
+    const stored = localStorage.getItem("cibc_theme");
+    if (stored && themes.includes(stored)) applyTheme(stored);
+    togg.style.display = "inline-flex"; // defensive
+    togg.addEventListener("click", (e) => {
+      e.preventDefault();
+      const cur = currentTheme();
+      const idx = themes.indexOf(cur);
+      const next = themes[(idx + 1) % themes.length];
+      applyTheme(next);
+      toast(`Theme: ${next}`, { duration: 900 });
     });
   }
 
-  // Update the signup button in the navbar to act as Sign up OR Sign out depending on state.
-  function updateSignupControl() {
-    const navRight =
-      document.querySelector(".nav-right") ||
-      document.querySelector("header .nav-row");
-    if (!navRight) return;
-    let signupEl =
-      navRight.querySelector(".btn.signup") ||
-      navRight.querySelector("#signupBtn") ||
-      null;
-    if (!signupEl) {
-      // fallback: create a signup-like button if none exists
-      signupEl = document.createElement("button");
-      signupEl.className = "btn signup";
-      signupEl.id = "signupBtn";
-      signupEl.textContent = "Sign up";
-      navRight.insertBefore(signupEl, navRight.firstChild);
-    }
+  // main initialization
+  function init() {
+    // wire toggler immediately
+    wireThemeToggler();
 
-    // remove any previous click handlers we may have attached by replacing with a fresh one
-    // (safer than trying to remove specific listeners)
-    const newEl = signupEl.cloneNode(true);
-    signupEl.parentElement.replaceChild(newEl, signupEl);
-    signupEl = newEl;
+    // fill sign button initial state
+    const signed = !!sessionStorage.getItem("cibc_signed_in");
+    applySignButton(signed);
 
-    if (isSignedIn()) {
-      // Signed in: show "Sign out"
-      signupEl.textContent = "Sign out";
-      signupEl.classList.remove("signup");
-      signupEl.classList.add("btn", "ghost"); // keep styling consistent
-      signupEl.setAttribute("title", "Sign out");
-      signupEl.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        // Clear demo storage
-        try {
-          localStorage.removeItem("cibc_jira_key");
-          sessionStorage.removeItem("cibc_api_token");
-        } catch (e) {}
-        toast("Signed out (demo)", { duration: 1400 });
-        // revert UI
-        applyAuthState();
-      });
-    } else {
-      // Not signed in: show "Sign up" which opens modal
-      signupEl.textContent = "Sign up";
-      signupEl.classList.add("signup");
-      signupEl.setAttribute("title", "Sign up / Sign in");
-      signupEl.addEventListener("click", (ev) => {
-        ev.preventDefault();
-        const modal = document.getElementById("signupModal");
-        if (modal) {
-          modal.classList.remove("hidden");
-          modal.setAttribute("aria-hidden", "false");
-          const u = modal.querySelector("#modalUser");
-          if (u) setTimeout(() => u.focus(), 40);
-        }
-      });
-    }
-  }
-
-  async function initAuthDemo() {
-    // wire buttons for JIRA auth
+    // JIRA authenticate button
     const jiraInput = qs("#jiraKey");
     const authBtn = qs("#authenticateBtn");
-
-    if (jiraInput && authBtn) {
+    if (authBtn && jiraInput) {
       const parentCol =
         jiraInput.closest(".input-row")?.parentElement ||
         jiraInput.closest("section") ||
         document.body;
       const jiraError = ensureErrorContainer(parentCol, "jiraError", "");
-
       authBtn.addEventListener("click", async (ev) => {
         ev.preventDefault();
         const group = jiraInput.closest(".input-group");
         const val = (jiraInput.value || "").trim();
-
         authBtn.disabled = true;
-        const originalText = authBtn.textContent;
+        const orig = authBtn.textContent;
         authBtn.textContent = "Authenticating…";
-
-        await delay(800);
-
+        await new Promise((r) => setTimeout(r, 700));
         if (val === DEMO_JIRA) {
           try {
             localStorage.setItem("cibc_jira_key", val);
           } catch (e) {}
           hideError(group, jiraInput, jiraError);
-          toast("JIRA authenticated — user connected", {
-            duration: 2200,
-            type: "success",
-          });
-          // lock button
           authBtn.textContent = "Authenticated";
           authBtn.classList.add("disabled");
-          authBtn.setAttribute("aria-pressed", "true");
+          toast("JIRA authenticated — user connected", {
+            type: "success",
+            duration: 1600,
+          });
         } else {
           showError(
             group,
             jiraInput,
             jiraError,
-            "Invalid JIRA key. Use demo key: vishal-jira"
+            `Invalid JIRA key. Use demo: ${DEMO_JIRA}`
           );
+          authBtn.textContent = orig;
           toast("JIRA authentication failed", {
-            duration: 2200,
             type: "error",
+            duration: 1600,
           });
-          authBtn.textContent = originalText;
           jiraInput.focus();
         }
-
         authBtn.disabled = false;
-        applyAuthState();
+        // Note: update to delta remains disabled until API token validated
+        // keep runAll/runAsNew unchanged by this action
       });
     }
 
-    // API token connect
+    // API connect
     const apiInput = qs("#apiKey");
     const connectBtn = qs("#connectBtn");
-
-    if (apiInput && connectBtn) {
+    if (connectBtn && apiInput) {
       const parentCol =
-        apiInput.closest(".input-row")?.parentElement ||
         apiInput.closest(".sidebar") ||
         apiInput.closest("aside") ||
         document.body;
       const apiError = ensureErrorContainer(parentCol, "apiError", "");
-
       connectBtn.addEventListener("click", async (ev) => {
         ev.preventDefault();
         const group = apiInput.closest(".input-group");
         const val = (apiInput.value || "").trim();
-
         connectBtn.disabled = true;
-        const originalText = connectBtn.textContent;
+        const orig = connectBtn.textContent;
         connectBtn.textContent = "Connecting…";
-
-        await delay(700);
-
+        await new Promise((r) => setTimeout(r, 700));
         if (val === DEMO_TOKEN) {
           try {
             sessionStorage.setItem("cibc_api_token", val);
           } catch (e) {}
           hideError(group, apiInput, apiError);
-          toast("API token accepted — connection established", {
-            duration: 2200,
-            type: "success",
-          });
           connectBtn.textContent = "Authenticated";
           connectBtn.classList.add("disabled");
-          connectBtn.setAttribute("aria-pressed", "true");
+          toast("API token accepted — connection established", {
+            type: "success",
+            duration: 1600,
+          });
         } else {
           showError(
             group,
             apiInput,
             apiError,
-            "Invalid API token. Use demo token: vishal-token"
+            `Invalid API token. Use demo: ${DEMO_TOKEN}`
           );
-          toast("API token invalid", { duration: 2200, type: "error" });
-          connectBtn.textContent = originalText;
+          connectBtn.textContent = orig;
+          toast("API token invalid", { type: "error", duration: 1600 });
           apiInput.focus();
         }
-
         connectBtn.disabled = false;
-        applyAuthState();
-      });
-    }
-
-    // Generic processing for buttons with data-action="process"
-    qsa('button[data-action="process"]').forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        e.preventDefault();
-        // if action is protected and api is not connected, block
+        // Update protection for updateDelta
         const apiConnected =
           sessionStorage.getItem("cibc_api_token") === DEMO_TOKEN;
-        if (!apiConnected) {
-          toast("Please connect API token to perform this action", {
-            duration: 2000,
-            type: "error",
-          });
-          return;
-        }
-        const orig = btn.textContent;
-        btn.disabled = true;
-        btn.textContent = "Processing…";
-        await delay(600);
-        btn.textContent = orig;
-        btn.disabled = false;
-        toast(`${orig} — done`, { duration: 1500 });
+        const signedIn = !!sessionStorage.getItem("cibc_signed_in");
+        setActionProtection({ apiConnected, signedIn });
       });
-    });
-  }
-
-  // modal wiring (signup) — kept at bottom for clarity
-  function modalWire() {
-    const signupBtn =
-      document.querySelector(".nav-right .btn.signup") ||
-      qs("#signupBtn") ||
-      null;
-    const modal = document.getElementById("signupModal");
-    if (!modal) return;
-
-    function openModal() {
-      modal.classList.remove("hidden");
-      modal.setAttribute("aria-hidden", "false");
-      const u = modal.querySelector("#modalUser");
-      if (u) setTimeout(() => u.focus(), 40);
-    }
-    function closeModal() {
-      modal.classList.add("hidden");
-      modal.setAttribute("aria-hidden", "true");
     }
 
-    // signup button behavior is handled in updateSignupControl, but ensure fallback
-    signupBtn?.addEventListener("click", (e) => {
-      e.preventDefault();
-      openModal();
-    });
-
-    modal.querySelectorAll(".modal-close, .modal-backdrop").forEach((el) => {
-      el.addEventListener("click", (ev) => {
+    // modal wiring (sign-in modal logic)
+    const modal = qs("#signupModal");
+    const modalSignInBtn = qs("#modalSignInBtn");
+    if (modal && modalSignInBtn) {
+      modalSignInBtn.addEventListener("click", (ev) => {
         ev.preventDefault();
-        closeModal();
+        const user = (qs("#modalUser", modal)?.value || "").trim();
+        const pw = (qs("#modalToken", modal)?.value || "").trim();
+
+        if (user === DEMO_EMAIL && pw === DEMO_PW) {
+          // mark user as signed-in (session-only)
+          try {
+            sessionStorage.setItem("cibc_signed_in", "1");
+          } catch (e) {}
+          toast("Signed in (demo)", { type: "success", duration: 1400 });
+          // enable runAll & runAsNew, but leave updateDelta disabled until API token validated
+          const apiConnected =
+            sessionStorage.getItem("cibc_api_token") === DEMO_TOKEN;
+          setActionProtection({ apiConnected, signedIn: true });
+          applySignButton(true);
+          // close modal
+          modal.classList.add("hidden");
+          modal.setAttribute("aria-hidden", "true");
+        } else {
+          toast("Invalid sign-in credentials", {
+            type: "error",
+            duration: 1800,
+          });
+        }
       });
-    });
 
-    // close modal on ESC
-    document.addEventListener("keydown", (ev) => {
-      if (ev.key === "Escape") {
-        if (!modal.classList.contains("hidden")) closeModal();
-      }
-    });
+      // close controls
+      modal.querySelectorAll(".modal-close, .modal-backdrop").forEach((el) => {
+        el.addEventListener("click", (e) => {
+          e.preventDefault();
+          modal.classList.add("hidden");
+          modal.setAttribute("aria-hidden", "true");
+        });
+      });
 
-    const modalSignInBtn = document.getElementById("modalSignInBtn");
-    modalSignInBtn?.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      const user = (document.getElementById("modalUser")?.value || "").trim();
-      const token = (document.getElementById("modalToken")?.value || "").trim();
+      // close on ESC
+      document.addEventListener("keydown", (ev) => {
+        if (ev.key === "Escape" && !modal.classList.contains("hidden")) {
+          modal.classList.add("hidden");
+          modal.setAttribute("aria-hidden", "true");
+        }
+      });
+    }
 
-      if (user !== DEMO_JIRA || token !== DEMO_TOKEN) {
-        toast("Invalid demo credentials", { duration: 2200, type: "error" });
-        return;
-      }
-
-      try {
-        localStorage.setItem("cibc_jira_key", user);
-        sessionStorage.setItem("cibc_api_token", token);
-      } catch (e) {
-        /* ignore storage errors */
-      }
-
-      toast("Signed in (demo)", { duration: 1600, type: "success" });
-
-      // reflect button states
-      const btnAuth = qs("#authenticateBtn");
-      const btnConnect = qs("#connectBtn");
-      if (btnAuth) {
-        btnAuth.textContent = "Authenticated";
-        btnAuth.classList.add("disabled");
-        btnAuth.setAttribute("aria-pressed", "true");
-      }
-      if (btnConnect) {
-        btnConnect.textContent = "Authenticated";
-        btnConnect.classList.add("disabled");
-        btnConnect.setAttribute("aria-pressed", "true");
-      }
-
-      closeModal();
-      applyAuthState();
-    });
+    // Initialize protection on load (based on current session)
+    const apiConnected =
+      sessionStorage.getItem("cibc_api_token") === DEMO_TOKEN;
+    const signedIn = !!sessionStorage.getItem("cibc_signed_in");
+    setActionProtection({ apiConnected, signedIn });
+    applySignButton(signedIn);
   }
 
-  // initialize on DOM ready
+  // DOM ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => {
-      initAuthDemo().catch((e) => console.error("initAuthDemo error", e));
-      modalWire();
-      // reflect any persisted state immediately
-      applyAuthState();
-    });
+    document.addEventListener("DOMContentLoaded", init);
   } else {
-    initAuthDemo().catch((e) => console.error("initAuthDemo error", e));
-    modalWire();
-    applyAuthState();
+    init();
   }
 })();
