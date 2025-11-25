@@ -172,7 +172,6 @@
       'input, button, textarea, [tabindex]:not([tabindex="-1"])'
     );
     if (first) {
-      // slight delay to allow CSS transitions
       setTimeout(() => first.focus(), 40);
     }
     // setup simple focus trap
@@ -235,8 +234,10 @@
   // Main init
   // ------------------------
   function init() {
-    // wire toggler immediately
-    wireThemeToggler();
+    // IMPORTANT:
+    // Do NOT call undefined functions (old code called wireThemeToggler()
+    // here and it caused an exception which prevented the modal wiring).
+    // Theme toggling is handled centrally in ui.js; we only reflect state here.
 
     // ensure sign button exists and set initial state
     const signed = !!sessionStorage.getItem("cibc_signed_in");
@@ -285,7 +286,6 @@
           jiraInput.focus();
         }
         authBtn.disabled = false;
-        // Note: update to delta remains disabled until API token validated
       });
     }
 
