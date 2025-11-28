@@ -1,12 +1,13 @@
-// js/wiring.js (revised)
+// js/wiring.js (clean revised)
 // Integrates Runner, dragdrop, AI, DeltaSim, UI wiring
+
 import { Runner } from "./runner.js";
 import { initDragReorder } from "./dragdrop.js";
 
 const STORAGE_KEY = "cibc_notebook_v2";
 const cellsRoot = document.getElementById("cells");
 
-// start loading backends but do not block UI
+// Start loading backends but do not block UI
 async function ensureRunners() {
   try {
     await Runner.ensureBackend();
@@ -15,7 +16,46 @@ async function ensureRunners() {
   }
 }
 
-// Create a new cell element (more full-featured than earlier)
+// ---------- Empty state helper: "Add first cell" ----------
+
+function ensureEmptyStateAddButton() {
+  if (!cellsRoot) return;
+
+  const cellCount = cellsRoot.querySelectorAll(".cell").length;
+  let emptyState = document.getElementById("cells-empty-state");
+
+  if (cellCount === 0) {
+    if (!emptyState) {
+      emptyState = document.createElement("div");
+      emptyState.id = "cells-empty-state";
+      emptyState.style.display = "flex";
+      emptyState.style.justifyContent = "center";
+      emptyState.style.padding = "24px";
+
+      emptyState.innerHTML = `
+        <button class="btn primary" id="addFirstCellBtn">
+          ＋ Add first cell
+        </button>
+      `;
+
+      cellsRoot.appendChild(emptyState);
+
+      const addFirstBtn = emptyState.querySelector("#addFirstCellBtn");
+      addFirstBtn.addEventListener("click", () => {
+        const newCell = createCellDOM("# New cell\n");
+        cellsRoot.innerHTML = "";
+        cellsRoot.appendChild(newCell);
+        save();
+        ensureEmptyStateAddButton();
+      });
+    }
+  } else {
+    if (emptyState) emptyState.remove();
+  }
+}
+
+// ---------- Cell creation / helpers ----------
+
 function createCellDOM(codeText = "# New cell\n", opts = {}) {
   const article = document.createElement("article");
   article.className = "cell";
@@ -37,7 +77,9 @@ function createCellDOM(codeText = "# New cell\n", opts = {}) {
         codeText
       )}</div>
       <div class="cell-output" aria-live="polite"></div>
-      <div style="margin-top:8px"><button class="btn add-cell-btn">＋ Add cell</button></div>
+      <div style="margin-top:8px">
+        <button class="btn add-cell-btn">＋ Add cell</button>
+      </div>
     </div>
   `;
   return article;
@@ -55,17 +97,19 @@ function getCodeText(cell) {
   const el = cell.querySelector(".code");
   return el ? el.innerText : "";
 }
+
 function setOutput(cell, html) {
   const o = cell.querySelector(".cell-output");
   if (o) o.innerHTML = html;
 }
+
+// ---------- Runner integration ----------
 
 // run a single cell, show states, return result
 async function runCell(cell) {
   if (!cell) return;
   const code = getCodeText(cell);
 
-  // runner status container
   const runnerResEl = (function () {
     let el = cell.querySelector(".run-status");
     if (!el) {
@@ -88,10 +132,10 @@ async function runCell(cell) {
         const outText = res.stdout || (res.result ? String(res.result) : "");
         setOutput(cell, `<pre>${escapeHtml(outText)}</pre>`);
       } else {
-        // SQL not supported in this runner build; show helpful message
+        // SQL not supported in this build
         setOutput(
           cell,
-          `<pre style="color: #b81d1d">${escapeHtml(
+          `<pre style="color:#b81d1d">${escapeHtml(
             res.error ||
               "SQL execution is not configured. This build runs Python only."
           )}</pre>`
@@ -125,15 +169,15 @@ async function runCell(cell) {
 
 // run all sequentially
 async function runAll() {
+  if (!cellsRoot) return;
   const cells = Array.from(cellsRoot.querySelectorAll(".cell"));
   for (const c of cells) {
-    // await each run to keep order and avoid concurrency issues in pyodide
-    // you can parallelize later if you want
     await runCell(c);
   }
 }
 
-// wire events
+// ---------- Wiring / events ----------
+
 function wireUI() {
   // toolbar click handling (delegated)
   document.addEventListener("click", async (ev) => {
@@ -147,6 +191,7 @@ function wireUI() {
       const copy = createCellDOM(getCodeText(cell));
       cell.parentNode.insertBefore(copy, cell.nextSibling);
       save();
+      ensureEmptyStateAddButton();
     } else if (act === "run") {
       await runCell(cell);
     } else if (act === "edit") {
@@ -156,7 +201,6 @@ function wireUI() {
       code.setAttribute("contenteditable", editable ? "false" : "true");
       if (!editable) {
         code.focus();
-        // place caret at end
         const range = document.createRange();
         range.selectNodeContents(code);
         range.collapse(false);
@@ -168,19 +212,18 @@ function wireUI() {
     } else if (act === "delete") {
       cell.remove();
       save();
+      ensureEmptyStateAddButton();
     } else if (act === "up") {
       const prev = cell.previousElementSibling;
       if (prev) cellsRoot.insertBefore(cell, prev);
       save();
     } else if (act === "down") {
       const next = cell.nextElementSibling;
-      // move after the next element (i.e. swap)
       if (next) {
         cellsRoot.insertBefore(next, cell);
         save();
       }
     } else if (act === "ai-explain") {
-      // AI module might be optional; guard with try/catch
       try {
         if (window.AI && typeof AI.aiExplain === "function") {
           const code = getCodeText(cell);
@@ -228,18 +271,19 @@ function wireUI() {
     const newCell = createCellDOM("# New cell\n", true);
     cell.parentNode.insertBefore(newCell, cell.nextSibling);
     save();
+    ensureEmptyStateAddButton();
   });
 
-  // add-between buttons (buttons between cells) if you use them
+  // add-between buttons (if you use them)
   document.addEventListener("click", (ev) => {
     const addBetween = ev.target.closest(".add-between-btn");
     if (!addBetween) return;
-    // find the separator container and insert after it
     const sep = addBetween.closest(".add-between");
     if (!sep) return;
     const newCell = createCellDOM("# New cell\n", true);
     sep.parentNode.insertBefore(newCell, sep.nextSibling);
     save();
+    ensureEmptyStateAddButton();
   });
 
   // auto-save when cell content changes
@@ -261,6 +305,7 @@ function wireUI() {
 
   // run-as-new button (open new window with code list)
   document.getElementById("runAsNewBtn")?.addEventListener("click", () => {
+    if (!cellsRoot) return;
     const cells = Array.from(cellsRoot.querySelectorAll(".cell")).map((c) =>
       getCodeText(c)
     );
@@ -271,11 +316,12 @@ function wireUI() {
     win.document.close();
   });
 
-  // Update to Delta -> demo: upsert to delta sim (guard with DeltaSim)
+  // Update to Delta -> demo
   document
     .getElementById("updateDeltaBtn")
     ?.addEventListener("click", async () => {
       try {
+        if (!cellsRoot) return;
         const last = Array.from(cellsRoot.querySelectorAll(".cell")).pop();
         const out = last?.querySelector(".cell-output")?.innerText || "";
         let rows = [];
@@ -300,10 +346,14 @@ function wireUI() {
     });
 
   // listen to reorder event to save
-  window.addEventListener("cells:reordered", () => save());
+  window.addEventListener("cells:reordered", () => {
+    save();
+    ensureEmptyStateAddButton();
+  });
 }
 
-// autosave / load
+// ---------- autosave / load ----------
+
 function save() {
   if (!cellsRoot) return;
   const data = Array.from(cellsRoot.querySelectorAll(".cell")).map((c) => ({
@@ -321,6 +371,7 @@ function load() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (!raw) {
     // nothing saved -> keep existing (already in HTML)
+    ensureEmptyStateAddButton();
     return;
   }
   try {
@@ -330,6 +381,7 @@ function load() {
   } catch (err) {
     console.warn("load failed", err);
   }
+  ensureEmptyStateAddButton();
 }
 
 let _saveTimeout = null;
@@ -338,76 +390,13 @@ function saveDebounced() {
   _saveTimeout = setTimeout(save, 700);
 }
 
-// Theme toggler & sign-in UI wiring
-(function uiOverrides() {
-  // Sign-in / sign-out single button in nav-right
-  function setSignedInUI(signedIn) {
-    document.body.classList.toggle("signed-in", !!signedIn);
-    const navRight = document.querySelector(".nav-right");
-    if (!navRight) return;
-    // find existing btn or create one
-    let btn = navRight.querySelector(".btn.signin, .btn.signup");
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.className = "btn signup";
-      // insert before toggler if present, otherwise append
-      const togg = document.getElementById("themeToggle");
-      if (togg) navRight.insertBefore(btn, togg);
-      else navRight.appendChild(btn);
-    }
-    // clear previous handlers
-    btn.onclick = null;
+// ---------- init ----------
 
-    if (signedIn) {
-      btn.textContent = "Sign out";
-      btn.classList.remove("signup");
-      btn.classList.add("signin");
-      btn.onclick = (e) => {
-        e.preventDefault();
-        try {
-          localStorage.removeItem("cibc_jira_key");
-          sessionStorage.removeItem("cibc_api_token");
-        } catch (ee) {}
-        setSignedInUI(false);
-        if (window.CIBC_UI?.toast)
-          window.CIBC_UI.toast("Signed out", { type: "info" });
-      };
-      // reflect slight style change if you want (body.signed-in in CSS)
-      document.body.classList.add("signed-in");
-    } else {
-      btn.textContent = "Sign in";
-      btn.classList.remove("signin");
-      btn.classList.add("signup");
-      btn.onclick = (e) => {
-        e.preventDefault();
-        const modal = document.getElementById("signupModal");
-        if (modal) {
-          modal.classList.remove("hidden");
-          modal.setAttribute("aria-hidden", "false");
-          const u = modal.querySelector("#modalUser");
-          if (u) setTimeout(() => u.focus(), 40);
-        }
-      };
-      document.body.classList.remove("signed-in");
-    }
-  }
-
-  // initialize from persisted demo state
-  const signed =
-    !!localStorage.getItem("cibc_jira_key") ||
-    !!sessionStorage.getItem("cibc_api_token");
-  setSignedInUI(signed);
-})();
-
-// init
 document.addEventListener("DOMContentLoaded", async () => {
-  // start loading runner in background (do not block UI)
   ensureRunners();
-  // load saved cells (if any)
   load();
-  // wire UI (handlers)
   wireUI();
-  // init drag/drop
+  ensureEmptyStateAddButton();
   try {
     initDragReorder("#cells");
   } catch (e) {

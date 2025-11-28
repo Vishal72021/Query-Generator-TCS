@@ -163,10 +163,17 @@
   // ------------------------
   // Modal helpers (open/close & lightweight focus trap)
   // ------------------------
+   // ------------------------
+  // Modal helpers (open/close & lightweight focus trap)
+  // ------------------------
   function openModal(modal) {
     if (!modal) return;
     modal.classList.remove("hidden");
     modal.setAttribute("aria-hidden", "false");
+
+    // mark body as having a modal (for CSS)
+    document.body.classList.add("modal-open");
+
     // focus first focusable element
     const first = modal.querySelector(
       'input, button, textarea, [tabindex]:not([tabindex="-1"])'
@@ -183,6 +190,10 @@
     if (!modal) return;
     modal.classList.add("hidden");
     modal.setAttribute("aria-hidden", "true");
+
+    // remove modal-open marker
+    document.body.classList.remove("modal-open");
+
     removeFocusTrap(modal);
     // restore focus
     if (

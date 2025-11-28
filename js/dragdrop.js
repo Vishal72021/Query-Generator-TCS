@@ -1,104 +1,150 @@
 // js/dragdrop.js
-// Pointer-based reorder for #cells container. Adds smooth placeholder insertion and mirror element.
+// Drag & drop reorder for .cell elements using the .reorder-handle
+// Works with wiring.js: initDragReorder("#cells") and fires "cells:reordered" on window.
 
-export function initDragReorder(containerSelector = "#cells") {
-  const container = document.querySelector(containerSelector);
-  if (!container) return;
-  if (container.__dd_inited) return;
-  container.__dd_inited = true;
-
-  let dragging = null;
-  let mirror = null;
-  let placeholder = null;
-  let startY = 0;
-  let offset = 0;
-
-  function createPlaceholder(h) {
-    const p = document.createElement("div");
-    p.className = "cell-placeholder";
-    p.style.height = h + "px";
-    p.style.border = "2px dashed rgba(0,0,0,0.06)";
-    p.style.borderRadius = "10px";
-    p.style.margin = "0";
-    p.style.transition = "height 160ms ease";
-    return p;
+export function initDragReorder(rootSelector = "#cells") {
+  const container = document.querySelector(rootSelector);
+  if (!container) {
+    console.warn("initDragReorder: container not found for", rootSelector);
+    return;
   }
 
-  container.addEventListener("pointerdown", (ev) => {
-    const handle = ev.target.closest(".reorder-handle, .drag-handle");
+  let draggingCell = null;
+  let placeholder = null;
+  let startY = 0;
+  let offsetY = 0;
+  let lastIndex = -1;
+  let cleanupFns = [];
+
+  function onHandleMouseDown(e) {
+    const handle = e.target.closest(".reorder-handle");
     if (!handle) return;
+
     const cell = handle.closest(".cell");
-    if (!cell) return;
-    ev.preventDefault();
-    dragging = cell;
-    startY = ev.clientY;
+    if (!cell || !container.contains(cell)) return;
+
+    e.preventDefault();
+
+    draggingCell = cell;
     const rect = cell.getBoundingClientRect();
-    offset = ev.clientY - rect.top;
+    startY = e.clientY;
+    offsetY = e.clientY - rect.top;
 
-    // clone mirror
-    mirror = cell.cloneNode(true);
-    mirror.style.position = "fixed";
-    mirror.style.left = rect.left + "px";
-    mirror.style.top = rect.top + "px";
-    mirror.style.width = rect.width + "px";
-    mirror.style.zIndex = 9999;
-    mirror.style.boxShadow = "0 18px 40px rgba(2,6,23,0.12)";
-    mirror.style.pointerEvents = "none";
-    mirror.style.transform = "scale(1.02)";
-    document.body.appendChild(mirror);
+    // Create placeholder with same height to keep layout stable
+    placeholder = document.createElement("div");
+    placeholder.className = "cell-placeholder";
+    placeholder.style.height = rect.height + "px";
 
-    placeholder = createPlaceholder(rect.height);
-    cell.parentNode.insertBefore(placeholder, cell.nextSibling);
-    cell.style.visibility = "hidden";
+    // Insert placeholder in place of the cell
+    container.insertBefore(placeholder, cell);
+    cell.classList.add("dragging");
+    cell.style.position = "absolute";
+    cell.style.left = rect.left + "px";
+    cell.style.width = rect.width + "px";
+    cell.style.zIndex = 999;
+    moveCell(e.clientY);
 
-    function onMove(e) {
-      if (!dragging) return;
-      mirror.style.top = e.clientY - offset + "px";
-      // find insertion point
-      const others = Array.from(container.querySelectorAll(".cell")).filter(
-        (c) => c !== dragging
-      );
-      let insertBefore = null;
-      for (const o of others) {
-        const r = o.getBoundingClientRect();
-        if (e.clientY < r.top + r.height / 2) {
-          insertBefore = o;
-          break;
-        }
-      }
-      if (insertBefore) {
-        if (placeholder.nextSibling !== insertBefore)
-          container.insertBefore(placeholder, insertBefore);
-      } else {
-        container.appendChild(placeholder);
+    // prevent text selection while dragging
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "grabbing";
+
+    const mm = (ev) => onMouseMove(ev);
+    const mu = (ev) => onMouseUp(ev);
+
+    window.addEventListener("mousemove", mm);
+    window.addEventListener("mouseup", mu);
+
+    cleanupFns.push(() => {
+      window.removeEventListener("mousemove", mm);
+      window.removeEventListener("mouseup", mu);
+    });
+  }
+
+  function moveCell(clientY) {
+    if (!draggingCell) return;
+    const y = clientY - offsetY;
+    draggingCell.style.top = y + "px";
+
+    // Figure out where placeholder should go
+    const cells = Array.from(container.querySelectorAll(".cell")).filter(
+      (c) => c !== draggingCell
+    );
+
+    const centerY = clientY;
+
+    let targetIndex = -1;
+    for (let i = 0; i < cells.length; i++) {
+      const r = cells[i].getBoundingClientRect();
+      const mid = r.top + r.height / 2;
+      if (centerY < mid) {
+        targetIndex = i;
+        break;
       }
     }
 
-    function onUp(e) {
-      if (!dragging) return;
-      // place dragging at placeholder
-      container.insertBefore(dragging, placeholder);
-      dragging.style.visibility = "";
-      // animate mirror to new position then remove
-      const finalRect = dragging.getBoundingClientRect();
-      mirror.style.transition = "all 220ms cubic-bezier(.2,.9,.25,1)";
-      mirror.style.left = finalRect.left + "px";
-      mirror.style.top = finalRect.top + "px";
-      setTimeout(() => {
-        mirror.remove();
-        mirror = null;
-        if (placeholder) placeholder.remove();
-        placeholder = null;
-        // save order event
-        window.dispatchEvent(new CustomEvent("cells:reordered"));
-      }, 240);
-
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onUp);
-      dragging = null;
+    if (targetIndex === -1) {
+      // place at end
+      container.appendChild(placeholder);
+      lastIndex = cells.length;
+    } else {
+      container.insertBefore(placeholder, cells[targetIndex]);
+      lastIndex = targetIndex;
     }
+  }
 
-    window.addEventListener("pointermove", onMove, { passive: true });
-    window.addEventListener("pointerup", onUp, { passive: true });
+  function onMouseMove(e) {
+    if (!draggingCell) return;
+    e.preventDefault();
+    moveCell(e.clientY);
+
+    // auto-scroll if near viewport edge
+    const edge = 60;
+    if (e.clientY < edge) {
+      window.scrollBy(0, -12);
+    } else if (e.clientY > window.innerHeight - edge) {
+      window.scrollBy(0, 12);
+    }
+  }
+
+  function onMouseUp(e) {
+    if (!draggingCell) return;
+
+    // restore styles
+    draggingCell.classList.remove("dragging");
+    draggingCell.style.position = "";
+    draggingCell.style.top = "";
+    draggingCell.style.left = "";
+    draggingCell.style.width = "";
+    draggingCell.style.zIndex = "";
+
+    // put cell where placeholder is
+    if (placeholder && placeholder.parentNode === container) {
+      container.insertBefore(draggingCell, placeholder);
+      placeholder.remove();
+    }
+    placeholder = null;
+
+    // restore selection + cursor
+    document.body.style.userSelect = "";
+    document.body.style.cursor = "";
+
+    // cleanup listeners
+    cleanupFns.forEach((fn) => fn());
+    cleanupFns = [];
+    draggingCell = null;
+
+    // notify others (wiring.js listens to this)
+    window.dispatchEvent(
+      new CustomEvent("cells:reordered", {
+        detail: { root: rootSelector, index: lastIndex },
+      })
+    );
+  }
+
+  // Attach mousedown on handles (delegated)
+  container.addEventListener("mousedown", (e) => {
+    const handle = e.target.closest(".reorder-handle");
+    if (!handle) return;
+    onHandleMouseDown(e);
   });
 }

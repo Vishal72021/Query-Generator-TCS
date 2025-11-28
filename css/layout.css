@@ -56,6 +56,33 @@ body {
   z-index: 999;
 }
 
+/* Navbar brand + logo */
+
+.navbar .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  display: block;
+  height: 26px;
+  width: auto;
+}
+
+.brand-title {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* Slightly smaller on very small screens */
+@media (max-width: 640px) {
+  .brand-title {
+    font-size: 15px;
+  }
+}
+
 /* Keep nav links white-ish */
 .navbar a,
 .navbar .muted,

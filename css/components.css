@@ -30,6 +30,11 @@
 * {
   box-sizing: border-box;
 }
+/* Global UI font downscale (everything except cell/code text) */
+html {
+  font-size: 90%; /* Try 90%, 88%, or 92% */
+}
+
 html,
 body {
   height: 100%;
@@ -538,22 +543,42 @@ body.signed-in .nav-right .btn.signup {
 /* -------------------------
    Modal styles (append to components.css)
    ------------------------- */
+/* --- Modal layering & blur: keep toasts sharp --- */
+
 .modal {
   position: fixed;
   inset: 0;
-  display: grid;
-  place-items: center;
-  z-index: 1400;
-  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000; /* below toasts */
 }
+
+/* Backdrop blurs only what is behind it, not elements above it */
 .modal-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(6, 10, 15, 0.48);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  opacity: 1;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(8px);
 }
+
+/* Panel sits above backdrop */
+.modal-panel {
+  position: relative;
+  z-index: 10001;
+}
+
+/* Toast container should always sit above modal + backdrop */
+#cibc-toast-container {
+  z-index: 12000 !important;
+}
+
+/* Make sure no page-blur class accidentally blurs toasts */
+body.modal-open #cibc-toast-container {
+  filter: none !important;
+  backdrop-filter: none !important;
+}
+
 .modal-panel {
   pointer-events: auto;
   z-index: 1401;
